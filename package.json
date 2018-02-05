@@ -1,0 +1,28 @@
+{
+  "name": "webpack-cdn-upload-plugin",
+  "version": "0.1.0",
+  "description": "A plugin to upload things on cdn by webpack",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toxic-johann/webpack-cdn-upload-plugin.git"
+  },
+  "keywords": [
+    "webpack",
+    "cdn",
+    "upload",
+    "plugin"
+  ],
+  "author": "toxic-johann",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/toxic-johann/webpack-cdn-upload-plugin/issues"
+  },
+  "homepage": "https://github.com/toxic-johann/webpack-cdn-upload-plugin#readme",
+  "dependencies": {
+    "toxic-predicate-functions": "^0.1.5"
+  }
+}
