@@ -4,8 +4,10 @@
   "description": "A plugin to upload things on cdn by webpack",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --fix"
+    "test": "jest --coverage",
+    "lint": "eslint . --fix",
+    "precommit": "npm run lint && npm t",
+    "prepush": "npm t"
   },
   "repository": {
     "type": "git",
@@ -31,6 +33,23 @@
     "eslint-config-egg": "^6.0.0",
     "eslint-plugin-jest": "^21.7.0",
     "husky": "^0.14.3",
-    "jest": "^22.2.1"
+    "jest": "^22.2.1",
+    "memory-fs": "^0.4.1",
+    "webpack": "^3.10.0"
+  },
+  "jest": {
+    "modulePaths": [
+      "./"
+    ],
+    "moduleFileExtensions": [
+      "js"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "bower_components"
+    ],
+    "transform": {
+      ".*": "babel-jest"
+    }
   }
 }
