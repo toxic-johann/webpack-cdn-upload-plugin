@@ -52,7 +52,7 @@ class Plugin {
       if (isFunction(this.upload)) this.uploadAsset(compilation, callback);
     });
     compiler.plugin('this-compilation', compilation => {
-      compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], chunks => {
+      compilation.plugin([ 'optimize-chunks', 'optimize-extracted-chunks' ], chunks => {
         // Prevent multiple rename operations
         if (compilation[this.instanceId]) {
           return;

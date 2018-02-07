@@ -4,7 +4,8 @@
   "description": "A plugin to upload things on cdn by webpack",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint . --fix"
   },
   "repository": {
     "type": "git",
@@ -24,5 +25,12 @@
   "homepage": "https://github.com/toxic-johann/webpack-cdn-upload-plugin#readme",
   "dependencies": {
     "toxic-predicate-functions": "^0.1.5"
+  },
+  "devDependencies": {
+    "eslint": "^4.17.0",
+    "eslint-config-egg": "^6.0.0",
+    "eslint-plugin-jest": "^21.7.0",
+    "husky": "^0.14.3",
+    "jest": "^22.2.1"
   }
 }

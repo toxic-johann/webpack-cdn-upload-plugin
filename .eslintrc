@@ -1,0 +1,20 @@
+{
+  "env": {
+    "commonjs": true,
+    "es6": true,
+    "jest/globals": true
+  },
+  "extends": [
+    "eslint-config-egg"
+  ],
+  "plugins": [
+    "jest"
+  ],
+  "parser": "babel-eslint",
+  "parserOptions": {
+    "sourceType": "module"
+  },
+  "rules": {
+    "valid-jsdoc": "off"
+  }
+}
