@@ -8,11 +8,11 @@ class Plugin {
     const {
       rename,
       upload,
-      replaceByRegExp = false,
+      replaceAsyncChunkName = false,
     } = options;
     this.rename = rename;
     this.upload = upload;
-    this.replaceByRegExp = replaceByRegExp;
+    this.replaceAsyncChunkName = replaceAsyncChunkName;
     this.instanceId = instanceCounter++;
   }
 
@@ -35,14 +35,16 @@ class Plugin {
         const chunkSource = compilation.assets[filename].source();
 
         const url = await this.upload(chunkSource, filename);
-        chunksMap[chunkStat.id] = url;
+        if (url && isString(url)) {
+          chunksMap[chunkStat.id] = url;
+        }
       }
     });
 
     Promise.all(uploadPromise).then(() => {
-      // if (this.replaceByRegExp) {
-      //   this.replaceAsyncChunkNameByRegExp(compilation, chunksMap);
-      // }
+      if (this.replaceAsyncChunkName) {
+        this.replaceAsyncChunkNameByRegExp(compilation, chunksMap);
+      }
       callback();
     });
   }

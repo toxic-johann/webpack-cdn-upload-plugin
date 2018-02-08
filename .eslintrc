@@ -1,5 +1,6 @@
 {
   "env": {
+    "browser": true,
     "commonjs": true,
     "es6": true,
     "jest/globals": true
@@ -15,6 +16,7 @@
     "sourceType": "module"
   },
   "rules": {
-    "valid-jsdoc": "off"
+    "valid-jsdoc": "off",
+    "no-eval": "off"
   }
 }

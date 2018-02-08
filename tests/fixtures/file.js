@@ -1,3 +1,6 @@
 console.log('lol');
-require.ensure([ './module-a.js' ], function() {
-}, 'module-a');
+import('./module-a.js').then(() => {
+  console.log('wow');
+}).catch(error => {
+  console.error(error);
+});
