@@ -35,6 +35,7 @@
     "husky": "^0.14.3",
     "jest": "^22.2.1",
     "memory-fs": "^0.4.1",
+    "uglifyjs-webpack-plugin": "^1.1.8",
     "webpack": "^3.10.0"
   },
   "peerDependencies": {
