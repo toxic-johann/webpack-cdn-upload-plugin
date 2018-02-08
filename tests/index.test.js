@@ -4,6 +4,7 @@ const WebpackCdnUploadPlugin = require('../index');
 const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
+// const nanoid = require('nanoid');
 // const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
 describe('base behavior test', () => {
@@ -107,4 +108,37 @@ describe('base behavior test', () => {
     });
     compiler.outputFileSystem = new MemoryFileSystem();
   });
+
+  // test('use rename function', done => {
+  //   const compiler = webpack({
+  //     entry: {
+  //       file: path.join(__dirname, 'fixtures', 'file-a.js'),
+  //     },
+  //     output: {
+  //       path: OUTPUT_DIR,
+  //       filename: '[name].js',
+  //     },
+  //     plugins: [
+  //       new WebpackCdnUploadPlugin({
+  //         rename({ name }) {
+  //           return CDN_PREFIX + (name || nanoid()) + '.js';
+  //         },
+  //       }),
+  //     ],
+  //   }, function(error, result) {
+  //     expect(error).toBeFalsy();
+  //     expect(result.compilation.errors.length).toBe(0);
+  //     const js = result.compilation.assets['http://cdn.toxicjohann.com/file.js'].source();
+  //     eval(js);
+  //     const scripts = document.head.getElementsByTagName('script');
+  //     console.log(document.head.innerHTML);
+  //     expect(scripts.length).toBe(3);
+  //     Array.from(scripts).forEach(script => {
+  //       console.log(script.src);
+  //       expect(script.src.indexOf(CDN_PREFIX)).toBe(0);
+  //     });
+  //     done();
+  //   });
+  //   compiler.outputFileSystem = new MemoryFileSystem();
+  // });
 });

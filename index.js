@@ -52,6 +52,7 @@ class Plugin {
   apply(compiler) {
     compiler.plugin('emit', (compilation, callback) => {
       if (isFunction(this.upload)) this.uploadAsset(compilation, callback);
+      else callback();
     });
     compiler.plugin('this-compilation', compilation => {
       compilation.plugin([ 'optimize-chunks', 'optimize-extracted-chunks' ], chunks => {
@@ -62,7 +63,11 @@ class Plugin {
         compilation[this.instanceId] = true;
         chunks.forEach(chunk => {
           if (isFunction(this.rename)) {
-            chunk.filenameTemplate = this.rename(chunk.name);
+            const newName = this.rename(chunk);
+            console.warn(newName);
+            if (newName && isString(newName)) {
+              chunk.filenameTemplate = newName;
+            }
           } else if (isString(this.rename)) {
             chunk.filenameTemplate = this.rename;
           }
