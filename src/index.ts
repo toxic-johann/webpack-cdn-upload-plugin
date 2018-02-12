@@ -1,10 +1,21 @@
-const { isString, isFunction } = require('toxic-predicate-functions');
+import { isString, isFunction } from 'toxic-predicate-functions';
 let instanceCounter = 0;
 const MATCH_PREG = /script\.src\s*\=\s*(__webpack_require__\.p\s*\+[^;]+)?;/;
 
-class Plugin {
+interface Options {
+  rename?: Function | string;
+  upload?: Function;
+  replaceAsyncChunkName?: boolean;
+}
 
-  constructor(options = {}) {
+class WebpackCdnUploadPlugin {
+  rename: Function | undefined | string;
+  upload: Function;
+  replaceAsyncChunkName: boolean;
+  instanceId: number;
+
+
+  constructor(options: Options = {}) {
     const {
       rename,
       upload,
@@ -55,6 +66,9 @@ class Plugin {
       else callback();
     });
     compiler.plugin('this-compilation', compilation => {
+      console.warn(Object.keys(compilation));
+      compilation.outputOptions.chunkFilename = '[name].js';
+      console.warn(compilation.outputOptions.chunkFilename);
       compilation.plugin([ 'optimize-chunks', 'optimize-extracted-chunks' ], chunks => {
         // Prevent multiple rename operations
         if (compilation[this.instanceId]) {
@@ -64,9 +78,10 @@ class Plugin {
         chunks.forEach(chunk => {
           if (isFunction(this.rename)) {
             const newName = this.rename(chunk);
-            console.warn(newName);
+            console.warn(newName, chunk);
             if (newName && isString(newName)) {
               chunk.filenameTemplate = newName;
+              chunk.name = newName;
             }
           } else if (isString(this.rename)) {
             chunk.filenameTemplate = this.rename;
@@ -77,4 +92,4 @@ class Plugin {
   }
 }
 
-module.exports = Plugin;
+module.exports = WebpackCdnUploadPlugin;

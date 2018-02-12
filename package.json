@@ -2,12 +2,13 @@
   "name": "webpack-cdn-upload-plugin",
   "version": "0.1.0",
   "description": "A plugin to upload things on cdn by webpack",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "jest --coverage",
     "lint": "eslint . --fix",
     "precommit": "npm run lint && npm t",
-    "prepush": "npm t"
+    "prepush": "npm t",
+    "build": "tsc --p ./"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,9 @@
     "toxic-predicate-functions": "^0.1.5"
   },
   "devDependencies": {
+    "@types/jest": "^22.1.2",
+    "@types/webpack": "^3.8.5",
+    "chunk-rename-webpack-plugin": "^1.1.1",
     "eslint": "^4.17.0",
     "eslint-config-egg": "^6.0.0",
     "eslint-plugin-jest": "^21.7.0",
@@ -36,6 +40,10 @@
     "jest": "^22.2.1",
     "memory-fs": "^0.4.1",
     "nanoid": "^1.0.1",
+    "ts-jest": "^22.0.4",
+    "tslint": "^5.9.1",
+    "tslint-config-standard": "^7.0.0",
+    "typescript": "^2.7.1",
     "uglifyjs-webpack-plugin": "^1.1.8",
     "webpack": "^3.10.0"
   },
@@ -47,14 +55,22 @@
       "./"
     ],
     "moduleFileExtensions": [
-      "js"
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
     ],
     "moduleDirectories": [
       "node_modules",
       "bower_components"
     ],
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     "transform": {
-      ".*": "babel-jest"
-    }
+      "^.+\\.tsx?$": "ts-jest",
+      ".jsx?$": "babel-jest"
+    },
+    "mapCoverage": true
   }
 }

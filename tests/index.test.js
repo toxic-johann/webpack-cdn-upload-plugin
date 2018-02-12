@@ -1,11 +1,12 @@
 const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
-const WebpackCdnUploadPlugin = require('../index');
+const WebpackCdnUploadPlugin = require('../src/index.ts');
 const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // const nanoid = require('nanoid');
 // const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+// const fs = require('fs');
 
 describe('base behavior test', () => {
   beforeEach(() => {
@@ -117,6 +118,7 @@ describe('base behavior test', () => {
   //     output: {
   //       path: OUTPUT_DIR,
   //       filename: '[name].js',
+  //       chunkFilename: 'chunk-[name]-[chunkhash].js',
   //     },
   //     plugins: [
   //       new WebpackCdnUploadPlugin({
@@ -124,18 +126,21 @@ describe('base behavior test', () => {
   //           return CDN_PREFIX + (name || nanoid()) + '.js';
   //         },
   //       }),
+  //       new UglifyJsPlugin(),
   //     ],
   //   }, function(error, result) {
   //     expect(error).toBeFalsy();
   //     expect(result.compilation.errors.length).toBe(0);
-  //     const js = result.compilation.assets['http://cdn.toxicjohann.com/file.js'].source();
+  //     console.log(Object.keys(result.compilation.assets));
+  //     const js = result.compilation.assets[CDN_PREFIX + 'file.js'].source();
+  //     fs.writeFileSync('./test.js', js);
   //     eval(js);
   //     const scripts = document.head.getElementsByTagName('script');
   //     console.log(document.head.innerHTML);
-  //     expect(scripts.length).toBe(3);
+  //     // expect(scripts.length).toBe(3);
   //     Array.from(scripts).forEach(script => {
   //       console.log(script.src);
-  //       expect(script.src.indexOf(CDN_PREFIX)).toBe(0);
+  //       // expect(script.src.indexOf(CDN_PREFIX)).toBe(0);
   //     });
   //     done();
   //   });
