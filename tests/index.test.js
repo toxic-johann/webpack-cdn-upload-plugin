@@ -270,7 +270,6 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-
   test('support upload multiple chunk and do not affect publich path in async chunk when we do not replace async chunk name', done => {
     const compiler = webpack({
       entry: {
@@ -309,4 +308,45 @@ describe('base behavior test', () => {
     });
     compiler.outputFileSystem = new MemoryFileSystem();
   });
+
+  // test('recursive test', done => {
+  //   const compiler = webpack({
+  //     entry: {
+  //       file: path.join(__dirname, 'fixtures', 'recursive/a.js'),
+  //     },
+  //     output: {
+  //       path: OUTPUT_DIR,
+  //       filename: '[name].js',
+  //       publicPath: '/public/',
+  //     },
+  //     plugins: [
+  //       new WebpackCdnUploadPlugin({
+  //         upload(content, name) {
+  //           return CDN_PREFIX + name;
+  //         },
+  //       }),
+  //     ],
+  //   }, function(error, result) {
+  //     expect(error).toBeFalsy();
+  //     console.log(result.compilation.errors);
+  //     expect(result.compilation.errors.length).toBe(0);
+  //     const js = result.compilation.assets['file.js'].source();
+  //     const fileNames = Object.keys(result.compilation.assets);
+  //     console.log(fileNames);
+  //     // expect(fileNames.includes('0.js')).toBe(true);
+  //     // expect(fileNames.includes('1.js')).toBe(true);
+  //     // expect(fileNames.includes('2.js')).toBe(true);
+  //     // expect(fileNames.includes('3.js')).toBe(true);
+  //     // expect(fileNames.includes('file.js')).toBe(true);
+  //     // eval(js);
+  //     // const scripts = Array.from(document.head.getElementsByTagName('script'));
+  //     // expect(scripts.length).toBe(3);
+  //     // const srcs = scripts.map(({ src }) => src);
+  //     // expect(srcs.includes('/public/0.js')).toBe(true);
+  //     // expect(srcs.includes('/public/1.js')).toBe(true);
+  //     // expect(srcs.includes('/public/2.js')).toBe(true);
+  //     done();
+  //   });
+  //   compiler.outputFileSystem = new MemoryFileSystem();
+  // });
 });
