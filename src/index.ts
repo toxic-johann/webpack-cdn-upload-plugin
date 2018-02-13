@@ -14,6 +14,7 @@ class WebpackCdnUploadPlugin {
   uniqueMark: string;
   chunksUrlMap: { [key: string]: string };
   originChunkFilename: string;
+  originPublicPath: string;
 
   constructor(options: Options = {}) {
     const {
@@ -61,8 +62,9 @@ class WebpackCdnUploadPlugin {
   markChunkName(compilation) {
     // if we need to replace async chunk name
     // we will set a mark on its parent chunk source
-    const originChunkFilename = compilation.outputOptions.chunkFilename;
+    const { chunkFilename: originChunkFilename, publicPath: originPublicPath } = compilation.outputOptions;
     this.originChunkFilename = originChunkFilename;
+    this.originPublicPath = originPublicPath;
     const chunkFileName = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
     Object.defineProperty(compilation.outputOptions, 'chunkFilename', {
       get() {
@@ -103,6 +105,7 @@ class WebpackCdnUploadPlugin {
   // we need to change its async chunk name before upload
   replaceAsyncChunkMapOfChunk(chunk, compilation) {
     const asyncChunkMap = chunk.chunks.reduce((map, { id }) => {
+      /* istanbul ignore if */
       if (!this.chunksUrlMap[id]) {
         throw new Error(`We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`);
       }
@@ -112,10 +115,10 @@ class WebpackCdnUploadPlugin {
     const filename = chunk.files[0];
     const chunkFile = compilation.assets[filename];
     const source = chunkFile.source()
-      .replace(new RegExp(`"${this.uniqueMark}(.*)${this.uniqueMark}"`), (text, match) => {
-        const [ chunkIdStr ] = match.split(this.uniqueMark);
+      .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`), (text, $1, $2) => {
+        const [ chunkIdStr ] = $2.split(this.uniqueMark);
         const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
-        const newText = `${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
+        const newText = `src=${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
         return newText;
       });
     chunkFile.source = () => {
@@ -127,10 +130,11 @@ class WebpackCdnUploadPlugin {
     for (const filename of chunk.files) {
       const fileSource = compilation.assets[filename].source();
       const url = await this.upload(fileSource, filename, chunk);
-
-      if (url && isString(url)) {
-        this.chunksUrlMap[chunk.id] = url;
-      }
+      this.chunksUrlMap[chunk.id] = url && isString(url)
+        ? url
+        : this.replaceAsyncChunkName
+          ? ((this.originPublicPath || '') + filename)
+          : filename;
     }
   }
 }

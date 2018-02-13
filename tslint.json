@@ -15,8 +15,7 @@
     "trailing-comma": true,
     "no-console": [
       true,
-      "log",
-      "error"
+      "log"
     ]
   }
 }
