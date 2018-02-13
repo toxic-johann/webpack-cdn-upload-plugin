@@ -12,7 +12,8 @@ class WebpackCdnUploadPlugin {
   upload: Function;
   replaceAsyncChunkName: boolean;
   uniqueMark: string;
-  chunksUrlMap: { [key: string]: string };
+  chunksIdUrlMap: { [key: string]: string };
+  chunksNameUrlMap: { [key: string]: string };
   originChunkFilename: string;
   originPublicPath: string;
 
@@ -27,7 +28,8 @@ class WebpackCdnUploadPlugin {
     this.replaceAsyncChunkName = replaceAsyncChunkName;
     // generate a random id to mark the chunkname, so that we can replace it.
     this.uniqueMark = nanoid();
-    this.chunksUrlMap = {};
+    this.chunksIdUrlMap = {};
+    this.chunksNameUrlMap = {};
   }
 
   apply(compiler) {
@@ -48,6 +50,11 @@ class WebpackCdnUploadPlugin {
               chunk.filenameTemplate = this.originChunkFilename;
             }
           });
+        });
+
+        compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
+          htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename] || filename);
+          callback(null, htmlPluginData);
         });
       }
     });
@@ -109,10 +116,10 @@ class WebpackCdnUploadPlugin {
   replaceAsyncChunkMapOfChunk(chunk, compilation) {
     const asyncChunkMap = chunk.chunks.reduce((map, { id }) => {
       /* istanbul ignore if */
-      if (!this.chunksUrlMap[id]) {
+      if (!this.chunksIdUrlMap[id]) {
         throw new Error(`We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`);
       }
-      map[id] = this.chunksUrlMap[id];
+      map[id] = this.chunksIdUrlMap[id];
       return map;
     }, {});
     const filename = chunk.files[0];
@@ -133,11 +140,13 @@ class WebpackCdnUploadPlugin {
     for (const filename of chunk.files) {
       const fileSource = compilation.assets[filename].source();
       const url = await this.upload(fileSource, filename, chunk);
-      this.chunksUrlMap[chunk.id] = url && isString(url)
+      const nameWithPublicPath = (this.originPublicPath || '') + filename;
+      this.chunksIdUrlMap[chunk.id] = url && isString(url)
         ? url
         : this.replaceAsyncChunkName
-          ? ((this.originPublicPath || '') + filename)
+          ? nameWithPublicPath
           : filename;
+      this.chunksNameUrlMap[nameWithPublicPath] = url;
     }
   }
 }
