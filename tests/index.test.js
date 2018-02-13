@@ -424,7 +424,7 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  test('support replacement on single html-webpack-plugin file with mutiple entry', done => {
+  test('support replacement on single html-webpack-plugin file with css', done => {
     const compiler = webpack({
       entry: {
         foo: path.join(__dirname, 'fixtures', '/css/foo.js'),
@@ -469,10 +469,65 @@ describe('base behavior test', () => {
         return src;
       });
       expect(srcs[0]).toBe(CDN_PREFIX + 'foo.js');
+      expect(srcs[1]).toBe('/public/bar.js');
+      const styles = html.match(/<link[^>]*>/g);
+      const hrefs = styles.map(style => {
+        const [ , src ] = style.match(/href="([^"]*)"/);
+        return src;
+      });
+      expect(hrefs[0]).toBe(CDN_PREFIX + 'foo.css');
+      expect(hrefs[1]).toBe('/public/bar.css');
       done();
     });
     compiler.outputFileSystem = new MemoryFileSystem();
   });
+
+  // test('support replacement on single html-webpack-plugin file with image', done => {
+  //   const compiler = webpack({
+  //     entry: path.join(__dirname, 'fixtures', '/file/index.js'),
+  //     output: {
+  //       path: OUTPUT_DIR,
+  //       filename: '[name].js',
+  //       chunkFilename: '[name].js',
+  //       publicPath: '/public/',
+  //     },
+  //     module: {
+  //       rules: [
+  //         {
+  //           test: /\.(png|jpg|gif)$/,
+  //           use: [
+  //             {
+  //               loader: 'file-loader',
+  //               options: {},
+  //             },
+  //           ],
+  //         },
+  //       ],
+  //     },
+  //     plugins: [
+  //       new WebpackCdnUploadPlugin({
+  //         upload(content, name) {
+  //           console.log(name);
+  //           return CDN_PREFIX + name;
+  //         },
+  //         replaceAsyncChunkName: true,
+  //       }),
+  //       new UglifyJsPlugin(),
+  //       new HtmlWebpackPlugin(),
+  //       new ExtractTextPlugin('[name].css'),
+  //     ],
+  //   }, function(error, result) {
+  //     expect(error).toBeFalsy();
+  //     expect(result.compilation.errors.length).toBe(0);
+  //     const html = result.compilation.assets['index.html'].source();
+  //     const js = result.compilation.assets['main.js'].source();
+  //     console.log(html);
+  //     console.log(js);
+  //     console.log(Object.keys(result.compilation.assets));
+  //     done();
+  //   });
+  //   compiler.outputFileSystem = new MemoryFileSystem();
+  // });
 
   // test('recursive test', done => {
   //   const compiler = webpack({
