@@ -7,7 +7,7 @@ const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // const nanoid = require('nanoid');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ExtractTextPlugin = require("extract-text-webpack-plugin");
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 // const fs = require('fs');
 
 describe('base behavior test', () => {
