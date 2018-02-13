@@ -1,6 +1,5 @@
 import { isString, isFunction } from 'toxic-predicate-functions';
-let instanceCounter = 0;
-const MATCH_PREG = /script\.src\s*\=\s*(__webpack_require__\.p\s*\+[^;]+)?;/;
+import * as nanoid from 'nanoid';
 
 interface Options {
   rename?: Function | string;
@@ -12,8 +11,9 @@ class WebpackCdnUploadPlugin {
   rename: Function | undefined | string;
   upload: Function;
   replaceAsyncChunkName: boolean;
-  instanceId: number;
-
+  uniqueMark: string;
+  chunksUrlMap: { [key: string]: string };
+  originChunkFilename: string;
 
   constructor(options: Options = {}) {
     const {
@@ -24,71 +24,114 @@ class WebpackCdnUploadPlugin {
     this.rename = rename;
     this.upload = upload;
     this.replaceAsyncChunkName = replaceAsyncChunkName;
-    this.instanceId = instanceCounter++;
-  }
-
-  replaceAsyncChunkNameByRegExp(compilation, chunksMap) {
-    const parents = compilation.chunks.filter(stat => stat.parents.length === 0);
-    chunksMap = JSON.stringify(chunksMap);
-    parents.forEach(parent => {
-      const source = compilation.assets[parent.files[0]].source().replace(MATCH_PREG, (text, match) =>
-        text.replace(match, chunksMap + '[chunkId]')
-      );
-      compilation.assets[parent.files[0]].source = () => source;
-    });
-  }
-
-  uploadAsset(compilation, callback) {
-    const { chunks } = compilation;
-    const chunksMap = {};
-    const uploadPromise = chunks.map(async chunkStat => {
-      for (const filename of chunkStat.files) {
-        const chunkSource = compilation.assets[filename].source();
-
-        const url = await this.upload(chunkSource, filename);
-        if (url && isString(url)) {
-          chunksMap[chunkStat.id] = url;
-        }
-      }
-    });
-
-    Promise.all(uploadPromise).then(() => {
-      if (this.replaceAsyncChunkName) {
-        this.replaceAsyncChunkNameByRegExp(compilation, chunksMap);
-      }
-      callback();
-    });
+    // generate a random id to mark the chunkname, so that we can replace it.
+    this.uniqueMark = nanoid();
+    this.chunksUrlMap = {};
   }
 
   apply(compiler) {
-    compiler.plugin('emit', (compilation, callback) => {
-      if (isFunction(this.upload)) this.uploadAsset(compilation, callback);
-      else callback();
-    });
     compiler.plugin('this-compilation', compilation => {
-      console.warn(Object.keys(compilation));
-      compilation.outputOptions.chunkFilename = '[name].js';
-      console.warn(compilation.outputOptions.chunkFilename);
-      compilation.plugin([ 'optimize-chunks', 'optimize-extracted-chunks' ], chunks => {
-        // Prevent multiple rename operations
-        if (compilation[this.instanceId]) {
-          return;
-        }
-        compilation[this.instanceId] = true;
-        chunks.forEach(chunk => {
-          if (isFunction(this.rename)) {
-            const newName = this.rename(chunk);
-            console.warn(newName, chunk);
-            if (newName && isString(newName)) {
-              chunk.filenameTemplate = newName;
-              chunk.name = newName;
-            }
-          } else if (isString(this.rename)) {
-            chunk.filenameTemplate = this.rename;
+      if (this.replaceAsyncChunkName) {
+        this.markChunkName(compilation);
+
+        compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks) => {
+          // Prevent multiple rename operations
+          if (compilation[this.uniqueMark]) {
+            return;
           }
+          compilation[this.uniqueMark] = true;
+
+          chunks.forEach((chunk) => {
+            if (chunk.parents.length) {
+              chunk.filenameTemplate = this.originChunkFilename;
+            }
+          });
         });
-      });
+      }
     });
+
+    compiler.plugin('emit', async (compilation, callback) => {
+      if (isFunction(this.upload)) {
+        await this.uploadAssets(compilation);
+        callback();
+      } else callback();
+    });
+  }
+
+  markChunkName(compilation) {
+    // if we need to replace async chunk name
+    // we will set a mark on its parent chunk source
+    const originChunkFilename = compilation.outputOptions.chunkFilename;
+    this.originChunkFilename = originChunkFilename;
+    const chunkFileName = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
+    Object.defineProperty(compilation.outputOptions, 'chunkFilename', {
+      get() {
+        return chunkFileName;
+      },
+      set() {
+        console.warn(`chunkFileName is set as ${chunkFileName} by webpack-upload-cdn-plugin, you can't change it`);
+        return chunkFileName;
+      },
+      configurable: false,
+    });
+  }
+
+  async uploadAssets(compilation) {
+    const { chunks } = compilation;
+    // sort chunks so that we can upload the async chunk at first
+    const sortedChunks = chunks.map(a => a)
+      .sort((a, b) => b.chunks.length - a.chunks.length);
+    while (sortedChunks.length) {
+      for (let i = sortedChunks.length - 1; i > -1;i--) {
+        const chunk = sortedChunks[i];
+
+        // only upload when its childChunk is uploaed
+        const uploadAble = chunk.chunks.reduce((uploadAble, childChunk) => uploadAble && sortedChunks.indexOf(childChunk) === -1, true);
+        if (!uploadAble) continue;
+
+        if (this.replaceAsyncChunkName) {
+          this.replaceAsyncChunkMapOfChunk(chunk, compilation);
+        }
+
+        await this.uploadChunk(chunk, compilation);
+        sortedChunks.splice(i, 1);
+      }
+    }
+  }
+
+  // if a file has async chunk
+  // we need to change its async chunk name before upload
+  replaceAsyncChunkMapOfChunk(chunk, compilation) {
+    const asyncChunkMap = chunk.chunks.reduce((map, { id }) => {
+      if (!this.chunksUrlMap[id]) {
+        throw new Error(`We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`);
+      }
+      map[id] = this.chunksUrlMap[id];
+      return map;
+    }, {});
+    const filename = chunk.files[0];
+    const chunkFile = compilation.assets[filename];
+    const source = chunkFile.source()
+      .replace(new RegExp(`"${this.uniqueMark}(.*)${this.uniqueMark}"`), (text, match) => {
+        const [ chunkIdStr ] = match.split(this.uniqueMark);
+        const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
+        const newText = `${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
+        return newText;
+      });
+    chunkFile.source = () => {
+      return source;
+    };
+  }
+
+  async uploadChunk(chunk, compilation) {
+    for (const filename of chunk.files) {
+      const fileSource = compilation.assets[filename].source();
+      const url = await this.upload(fileSource, filename, chunk);
+
+      if (url && isString(url)) {
+        this.chunksUrlMap[chunk.id] = url;
+      }
+    }
   }
 }
 

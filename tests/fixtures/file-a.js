@@ -1,5 +1,6 @@
-console.log('=-=');
-import('./module-a.js');
+console.log('I am file-a');
+// import('./module-a.js');
+import('./file.js');
 require.ensure([ './home.js' ], function() {
   require('./home.js');
 });

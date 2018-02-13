@@ -5,7 +5,7 @@ const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // const nanoid = require('nanoid');
-// const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 // const fs = require('fs');
 
 describe('base behavior test', () => {
@@ -37,7 +37,9 @@ describe('base behavior test', () => {
       expect(error).toBeFalsy();
       expect(result.compilation.errors.length).toBe(0);
       expect(fn).toHaveBeenCalledTimes(3);
-      expect(fileNames).toEqual([ '0.js', 'home.js', 'file.js' ]);
+      expect(fileNames.includes('0.js')).toBe(true);
+      expect(fileNames.includes('home.js')).toBe(true);
+      expect(fileNames.includes('file.js')).toBe(true);
       const js = result.compilation.assets['file.js'].source();
       eval(js);
       const scripts = document.head.getElementsByTagName('script');
@@ -100,50 +102,51 @@ describe('base behavior test', () => {
       expect(result.compilation.errors.length).toBe(0);
       const js = result.compilation.assets['file.js'].source();
       eval(js);
-      const scripts = document.head.getElementsByTagName('script');
+      const scripts = Array.from(document.head.getElementsByTagName('script'));
       expect(scripts.length).toBe(3);
-      Array.from(scripts).forEach(script => {
-        expect(script.src.indexOf(CDN_PREFIX)).toBe(0);
-      });
+      const srcs = scripts.map(({ src }) => src);
+      console.log(document.head.innerHTML);
+      expect(srcs.includes(CDN_PREFIX + '0.js')).toBe(true);
+      expect(srcs.includes(CDN_PREFIX + '1.js')).toBe(true);
+      expect(srcs.includes(CDN_PREFIX + '2.js')).toBe(true);
       done();
     });
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('use rename function', done => {
-  //   const compiler = webpack({
-  //     entry: {
-  //       file: path.join(__dirname, 'fixtures', 'file-a.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: 'chunk-[name]-[chunkhash].js',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         rename({ name }) {
-  //           return CDN_PREFIX + (name || nanoid()) + '.js';
-  //         },
-  //       }),
-  //       new UglifyJsPlugin(),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     console.log(Object.keys(result.compilation.assets));
-  //     const js = result.compilation.assets[CDN_PREFIX + 'file.js'].source();
-  //     fs.writeFileSync('./test.js', js);
-  //     eval(js);
-  //     const scripts = document.head.getElementsByTagName('script');
-  //     console.log(document.head.innerHTML);
-  //     // expect(scripts.length).toBe(3);
-  //     Array.from(scripts).forEach(script => {
-  //       console.log(script.src);
-  //       // expect(script.src.indexOf(CDN_PREFIX)).toBe(0);
-  //     });
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('work in uglify plugin', done => {
+    const compiler = webpack({
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file-a.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: 'chunk-[name].js',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+        new UglifyJsPlugin(),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const js = result.compilation.assets['file.js'].source();
+      // fs.writeFileSync('./what.js', js);
+      eval(js);
+      const scripts = Array.from(document.head.getElementsByTagName('script'));
+      expect(scripts.length).toBe(3);
+      const srcs = scripts.map(({ src }) => src);
+      expect(srcs.includes(CDN_PREFIX + 'chunk-vendor.js')).toBe(true);
+      expect(srcs.includes(CDN_PREFIX + 'chunk-1.js')).toBe(true);
+      expect(srcs.includes(CDN_PREFIX + 'chunk-2.js')).toBe(true);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 });

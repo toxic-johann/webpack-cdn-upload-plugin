@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "jest --coverage",
-    "lint": "eslint . --fix",
+    "lint": "tslint -c tslint.json  --project . --fix && eslint . --fix",
     "precommit": "npm run lint && npm t",
     "prepush": "npm t",
     "build": "tsc --p ./"
@@ -27,6 +27,8 @@
   },
   "homepage": "https://github.com/toxic-johann/webpack-cdn-upload-plugin#readme",
   "dependencies": {
+    "loader-utils": "^1.1.0",
+    "nanoid": "^1.0.1",
     "toxic-predicate-functions": "^0.1.5"
   },
   "devDependencies": {
@@ -39,7 +41,6 @@
     "husky": "^0.14.3",
     "jest": "^22.2.1",
     "memory-fs": "^0.4.1",
-    "nanoid": "^1.0.1",
     "ts-jest": "^22.0.4",
     "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",
