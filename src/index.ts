@@ -37,6 +37,7 @@ class WebpackCdnUploadPlugin {
 
         compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks) => {
           // Prevent multiple rename operations
+          /* istanbul ignore if */
           if (compilation[this.uniqueMark]) {
             return;
           }
@@ -71,7 +72,9 @@ class WebpackCdnUploadPlugin {
         return chunkFileName;
       },
       set() {
+        /* istanbul ignore next */
         console.warn(`chunkFileName is set as ${chunkFileName} by webpack-upload-cdn-plugin, you can't change it`);
+        /* istanbul ignore next */
         return chunkFileName;
       },
       configurable: false,

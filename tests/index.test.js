@@ -13,6 +13,32 @@ describe('base behavior test', () => {
     document.head.innerHTML = '';
   });
 
+  test('no upload still run', done => {
+    const compiler = webpack({
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file.js'),
+        home: path.join(__dirname, 'fixtures', 'home.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin(),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const js = result.compilation.assets['file.js'].source();
+      eval(js);
+      const scripts = document.head.getElementsByTagName('script');
+      expect(scripts.length).toBe(1);
+      expect(scripts[0].src).toBe('0.js');
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
+
   test('call upload function for each chunk', done => {
     const fn = jest.fn();
     const fileNames = [];
