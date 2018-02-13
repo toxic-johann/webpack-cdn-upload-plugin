@@ -7,6 +7,7 @@ const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // const nanoid = require('nanoid');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ExtractTextPlugin = require("extract-text-webpack-plugin");
 // const fs = require('fs');
 
 describe('base behavior test', () => {
@@ -418,6 +419,56 @@ describe('base behavior test', () => {
       });
       expect(srcs[0]).toBe(CDN_PREFIX + 'home.js');
       expect(srcs[1]).toBe(CDN_PREFIX + 'file.js');
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
+
+  test('support replacement on single html-webpack-plugin file with mutiple entry', done => {
+    const compiler = webpack({
+      entry: {
+        foo: path.join(__dirname, 'fixtures', '/css/foo.js'),
+        bar: path.join(__dirname, 'fixtures', '/css/bar.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      module: {
+        rules: [
+          {
+            test: /\.css$/,
+            use: ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: 'css-loader',
+            }),
+          },
+        ],
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (/bar/.test(name)) return;
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+        new UglifyJsPlugin(),
+        new HtmlWebpackPlugin(),
+        new ExtractTextPlugin('[name].css'),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      const scripts = html.match(/<script.*?script>/g);
+      const srcs = scripts.map(script => {
+        const [ , src ] = script.match(/src="([^"]*)"/);
+        return src;
+      });
+      expect(srcs[0]).toBe(CDN_PREFIX + 'foo.js');
       done();
     });
     compiler.outputFileSystem = new MemoryFileSystem();

@@ -54,6 +54,7 @@ class WebpackCdnUploadPlugin {
 
         compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
           htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename] || filename);
+          htmlPluginData.assets.css = htmlPluginData.assets.css.map(filename => this.chunksNameUrlMap[filename] || filename);
           callback(null, htmlPluginData);
         });
       }
