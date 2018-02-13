@@ -407,13 +407,13 @@ describe('base behavior test', () => {
         new UglifyJsPlugin(),
         new HtmlWebpackPlugin(),
       ],
-    }, function (error, result) {
+    }, function(error, result) {
       expect(error).toBeFalsy();
       expect(result.compilation.errors.length).toBe(0);
       const html = result.compilation.assets['index.html'].source();
       const scripts = html.match(/<script.*?script>/g);
       const srcs = scripts.map(script => {
-        const [, src] = script.match(/src="([^"]*)"/);
+        const [ , src ] = script.match(/src="([^"]*)"/);
         return src;
       });
       expect(srcs[0]).toBe(CDN_PREFIX + 'home.js');
