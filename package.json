@@ -49,7 +49,6 @@
     "memory-fs": "^0.4.1",
     "preload-webpack-plugin": "^2.2.0",
     "style-loader": "^0.20.1",
-    "toxic-webpack-manifest-plugin": "^0.2.2",
     "ts-jest": "^22.0.4",
     "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",

@@ -630,39 +630,6 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('support replacement on single html-webpack-plugin', done => {
-  //   const compiler = webpack({
-  //     entry: {
-  //       file: path.join(__dirname, 'fixtures', 'file-a.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: 'chunk-[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //       new ToxicWebpackManifestPlugin(),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     console.log(Object.keys(result.compilation.assets));
-  //     const manifest = result.compilation.assets['toxic-manifest.json'].source();
-  //     console.log(manifest);
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
-
   // test('recursive test', done => {
   //   const compiler = webpack({
   //     entry: {
