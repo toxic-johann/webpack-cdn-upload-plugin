@@ -353,3 +353,39 @@ We will check all the css file and upload the file included by url if this flag 
 - default: `true`
 
 We will check all the html file and upload the file included by `script`, `link` and more.
+
+Support
+-------
+
+If you've found an error in this sample, please file an issue:
+[https://github.com/googlechrome/preload-webpack-plugin/issues](https://github.com/toxic-johann/webpack-cdn-upload-plugin/issues)
+
+Patches are encouraged, and may be submitted by forking this project and
+submitting a pull request through GitHub.
+
+Contributing workflow
+---------------------
+
+`src/index.ts` contains the primary source for the plugin, `test` contains tests.
+
+Test the plugin:
+
+```sh
+$ npm install
+$ npm t
+```
+
+Lint the plugin:
+
+```sh
+$ npm run lint
+```
+
+The project is written in TypeScript, so it need a build step.
+
+Build the file
+
+```sh
+$ npm run build
+```
+
