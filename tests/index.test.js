@@ -8,6 +8,8 @@ const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const PreloadWebpackPlugin = require('preload-webpack-plugin');
+const escapeStringRegexp = require('escape-string-regexp');
 // const fs = require('fs');
 
 describe('base behavior test', () => {
@@ -521,6 +523,7 @@ describe('base behavior test', () => {
           },
           replaceAsyncChunkName: true,
           replaceUrlInCss: true,
+          replaceAssetsInHtml: true,
         }),
         new UglifyJsPlugin(),
         new HtmlWebpackPlugin(),
@@ -531,7 +534,7 @@ describe('base behavior test', () => {
       expect(result.compilation.errors.length).toBe(0);
       expect(fileNames.join('|').indexOf('jpeg') > -1).toBe(true);
       const css = result.compilation.assets['main.css'].source();
-      const cdnRegExpStr = CDN_PREFIX.replace(/\//g, '\\/');
+      const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
       expect((new RegExp(`url\\(${cdnRegExpStr}.*\.jpeg`)).test(css)).toBe(true);
       expect((new RegExp(`url\\(${cdnRegExpStr}.*\.png`)).test(css)).toBe(false);
       done();
@@ -539,58 +542,91 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('support replacement on single html-webpack-plugin file with img in html', done => {
-  //   const compiler = webpack({
-  //     entry: path.join(__dirname, 'fixtures', '/html/index.js'),
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: '[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     module: {
-  //       rules: [
-  //         {
-  //           test: /\.(png|jpe?g|gif)$/,
-  //           use: [
-  //             {
-  //               loader: 'file-loader',
-  //               options: {},
-  //             },
-  //           ],
-  //         },
-  //         {
-  //           test: /\.(html)$/,
-  //           use: {
-  //             loader: 'html-loader',
-  //           },
-  //         },
-  //       ],
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           if (/bar/.test(name)) return;
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin({
-  //         template: path.join(__dirname, 'fixtures', '/html/index.html'),
-  //       }),
-  //       new ExtractTextPlugin('[name].css'),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     console.log(result.compilation.errors);
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     console.log(html);
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support preload webpack plugin', done => {
+    const compiler = webpack({
+      entry: path.join(__dirname, 'fixtures', '/preload/index.js'),
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
+        }),
+        new UglifyJsPlugin(),
+        new HtmlWebpackPlugin(),
+        new PreloadWebpackPlugin(),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      expect(html.indexOf('http://cdn.toxicjohann.com/0.js') > -1).toBe(true);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
+
+  test('support replacement on single html-webpack-plugin file with img in html', done => {
+    const compiler = webpack({
+      entry: path.join(__dirname, 'fixtures', '/html/index.js'),
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      module: {
+        rules: [
+          {
+            test: /\.(png|jpe?g|gif)$/,
+            use: [
+              {
+                loader: 'file-loader',
+                options: {},
+              },
+            ],
+          },
+          {
+            test: /\.(html)$/,
+            use: {
+              loader: 'html-loader',
+            },
+          },
+        ],
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (/png/.test(name)) return;
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
+        }),
+        new UglifyJsPlugin(),
+        new HtmlWebpackPlugin({
+          template: path.join(__dirname, 'fixtures', '/html/index.html'),
+        }),
+        new ExtractTextPlugin('[name].css'),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
+      expect((new RegExp(`${cdnRegExpStr}.*\.jpeg`)).test(html)).toBe(true);
+      expect((new RegExp(`${cdnRegExpStr}.*\.png`)).test(html)).toBe(false);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('recursive test', done => {
   //   const compiler = webpack({

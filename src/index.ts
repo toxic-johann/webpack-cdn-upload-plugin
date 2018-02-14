@@ -1,11 +1,17 @@
+const escapeStringRegexp = require('escape-string-regexp');
 import { isString, isFunction } from 'toxic-predicate-functions';
 import * as nanoid from 'nanoid';
+
+function replaceFile(file: string, source: string, target: string) {
+  return file.replace(new RegExp(escapeStringRegexp(source), 'g'), target);
+}
 
 interface Options {
   rename?: Function | string;
   upload?: Function;
   replaceAsyncChunkName?: boolean;
   replaceUrlInCss?: boolean;
+  replaceAssetsInHtml?: boolean;
 }
 
 class WebpackCdnUploadPlugin {
@@ -13,6 +19,7 @@ class WebpackCdnUploadPlugin {
   upload: Function;
   replaceAsyncChunkName: boolean;
   replaceUrlInCss: boolean;
+  replaceAssetsInHtml: boolean;
   uniqueMark: string;
   chunksIdUrlMap: { [key: string]: string };
   chunksNameUrlMap: { [key: string]: string };
@@ -25,11 +32,13 @@ class WebpackCdnUploadPlugin {
       upload,
       replaceAsyncChunkName = false,
       replaceUrlInCss = false,
+      replaceAssetsInHtml = false,
     } = options;
     this.rename = rename;
     this.upload = upload;
     this.replaceAsyncChunkName = replaceAsyncChunkName;
     this.replaceUrlInCss = replaceUrlInCss;
+    this.replaceAssetsInHtml = replaceAssetsInHtml;
     // generate a random id to mark the chunkname, so that we can replace it.
     this.uniqueMark = nanoid();
     this.chunksIdUrlMap = {};
@@ -57,8 +66,33 @@ class WebpackCdnUploadPlugin {
         });
 
         compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
-          htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename] || filename);
-          htmlPluginData.assets.css = htmlPluginData.assets.css.map(filename => this.chunksNameUrlMap[filename] || filename);
+          htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename]);
+          htmlPluginData.assets.css = htmlPluginData.assets.css.map(filename => this.chunksNameUrlMap[filename]);
+          callback(null, htmlPluginData);
+        });
+      }
+
+      if (this.replaceAssetsInHtml) {
+        compilation.plugin('html-webpack-plugin-after-html-processing', async (htmlPluginData, callback) => {
+          const files = Object.keys(compilation.assets);
+          let html = htmlPluginData.html;
+          for (const rawFileName of files) {
+            const nameWithPublicPath = this.originPublicPath + rawFileName;
+            if (html.indexOf('"' + nameWithPublicPath) > -1) {
+              const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
+              if (uploadedUrl) {
+                html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
+                continue;
+              }
+
+              const url = await this.uploadFile(html, rawFileName);
+              if (url && isString(url)) {
+                html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
+              }
+            }
+          }
+
+          htmlPluginData.html = html;
           callback(null, htmlPluginData);
         });
       }
@@ -130,7 +164,7 @@ class WebpackCdnUploadPlugin {
     const filename = chunk.files[0];
     const chunkFile = compilation.assets[filename];
     const source = chunkFile.source()
-      .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`), (text, $1, $2) => {
+      .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
         const [ chunkIdStr ] = $2.split(this.uniqueMark);
         const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
         const newText = `src=${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
@@ -153,7 +187,7 @@ class WebpackCdnUploadPlugin {
           // if we have upload this path, and we have the file
           // we use it
           if (uploadedUrl) {
-            fileSource = fileSource.replace(nameWithPublicPath, uploadedUrl);
+            fileSource = replaceFile(fileSource, '(' + nameWithPublicPath, '(' + uploadedUrl);
             asset.source = () => fileSource;
             continue;
           }
@@ -165,7 +199,7 @@ class WebpackCdnUploadPlugin {
           const source = rawSource.source();
           const url = await this.uploadFile(source, rawPath);
           if (url && isString(url)) {
-            fileSource = fileSource.replace(nameWithPublicPath, url);
+            fileSource = replaceFile(fileSource, '(' + nameWithPublicPath, '(' + url);
             asset.source = () => fileSource;
           }
         }
@@ -184,7 +218,7 @@ class WebpackCdnUploadPlugin {
           ? nameWithPublicPath
           : name;
     }
-    this.chunksNameUrlMap[nameWithPublicPath] = url;
+    this.chunksNameUrlMap[nameWithPublicPath] = url || nameWithPublicPath;
     return url;
   }
 }
