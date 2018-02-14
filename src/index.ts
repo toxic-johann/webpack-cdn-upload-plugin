@@ -5,12 +5,14 @@ interface Options {
   rename?: Function | string;
   upload?: Function;
   replaceAsyncChunkName?: boolean;
+  replaceUrlInCss?: boolean;
 }
 
 class WebpackCdnUploadPlugin {
   rename: Function | undefined | string;
   upload: Function;
   replaceAsyncChunkName: boolean;
+  replaceUrlInCss: boolean;
   uniqueMark: string;
   chunksIdUrlMap: { [key: string]: string };
   chunksNameUrlMap: { [key: string]: string };
@@ -22,10 +24,12 @@ class WebpackCdnUploadPlugin {
       rename,
       upload,
       replaceAsyncChunkName = false,
+      replaceUrlInCss = false,
     } = options;
     this.rename = rename;
     this.upload = upload;
     this.replaceAsyncChunkName = replaceAsyncChunkName;
+    this.replaceUrlInCss = replaceUrlInCss;
     // generate a random id to mark the chunkname, so that we can replace it.
     this.uniqueMark = nanoid();
     this.chunksIdUrlMap = {};
@@ -139,16 +143,49 @@ class WebpackCdnUploadPlugin {
 
   async uploadChunk(chunk, compilation) {
     for (const filename of chunk.files) {
-      const fileSource = compilation.assets[filename].source();
-      const url = await this.upload(fileSource, filename, chunk);
-      const nameWithPublicPath = (this.originPublicPath || '') + filename;
+      const asset = compilation.assets[filename];
+      let fileSource = asset.source();
+      if (this.replaceUrlInCss && /.css$/.test(filename)) {
+        const urls = fileSource.match(/url\((.*?)\)/g);
+        for (const urlStr of urls) {
+          const nameWithPublicPath = urlStr.slice(4, -1);
+          const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
+          // if we have upload this path, and we have the file
+          // we use it
+          if (uploadedUrl) {
+            fileSource = fileSource.replace(nameWithPublicPath, uploadedUrl);
+            asset.source = () => fileSource;
+            continue;
+          }
+          const rawPath = nameWithPublicPath.replace(this.originPublicPath, '');
+          const rawSource = compilation.assets[rawPath];
+          // sometimes it maybe inline base64
+          if (!rawSource) continue;
+
+          const source = rawSource.source();
+          const url = await this.uploadFile(source, rawPath);
+          if (url && isString(url)) {
+            fileSource = fileSource.replace(nameWithPublicPath, url);
+            asset.source = () => fileSource;
+          }
+        }
+      }
+      await this.uploadFile(fileSource, filename, chunk);
+    }
+  }
+
+  async uploadFile(source: string, name: string, chunk?) {
+    const url = await this.upload(source, name, chunk);
+    const nameWithPublicPath = (this.originPublicPath || '') + name;
+    if (chunk) {
       this.chunksIdUrlMap[chunk.id] = url && isString(url)
         ? url
         : this.replaceAsyncChunkName
           ? nameWithPublicPath
-          : filename;
-      this.chunksNameUrlMap[nameWithPublicPath] = url;
+          : name;
     }
+    this.chunksNameUrlMap[nameWithPublicPath] = url;
+    return url;
   }
 }
 

@@ -1,1 +1,1 @@
-import './doggy.png';
+import './index.css';

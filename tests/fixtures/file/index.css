@@ -1,0 +1,11 @@
+body {
+  background-image: url('./doggy.jpeg');
+}
+
+div {
+  background-image: url('./doggy.png');
+}
+
+section {
+  background-image: url('./doggy.jpeg');
+}

@@ -482,52 +482,62 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('support replacement on single html-webpack-plugin file with image', done => {
-  //   const compiler = webpack({
-  //     entry: path.join(__dirname, 'fixtures', '/file/index.js'),
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: '[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     module: {
-  //       rules: [
-  //         {
-  //           test: /\.(png|jpg|gif)$/,
-  //           use: [
-  //             {
-  //               loader: 'file-loader',
-  //               options: {},
-  //             },
-  //           ],
-  //         },
-  //       ],
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           console.log(name);
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //       new ExtractTextPlugin('[name].css'),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     const js = result.compilation.assets['main.js'].source();
-  //     console.log(html);
-  //     console.log(js);
-  //     console.log(Object.keys(result.compilation.assets));
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support replacement on single html-webpack-plugin file with image', done => {
+    const fileNames = [];
+    const compiler = webpack({
+      entry: path.join(__dirname, 'fixtures', '/file/index.js'),
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      module: {
+        rules: [
+          {
+            test: /\.css$/,
+            use: ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: 'css-loader',
+            }),
+          },
+          {
+            test: /\.(png|jpe?g|gif)$/,
+            use: [
+              {
+                loader: 'file-loader',
+                options: {},
+              },
+            ],
+          },
+        ],
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (/png/.test(name)) return;
+            fileNames.push(name);
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+          replaceUrlInCss: true,
+        }),
+        new UglifyJsPlugin(),
+        new HtmlWebpackPlugin(),
+        new ExtractTextPlugin('[name].css'),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      expect(fileNames.join('|').indexOf('jpeg') > -1).toBe(true);
+      const css = result.compilation.assets['main.css'].source();
+      const cdnRegExpStr = CDN_PREFIX.replace(/\//g, '\\/');
+      expect((new RegExp(`url\\(${cdnRegExpStr}.*\.jpeg`)).test(css)).toBe(true);
+      expect((new RegExp(`url\\(${cdnRegExpStr}.*\.png`)).test(css)).toBe(false);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('recursive test', done => {
   //   const compiler = webpack({
