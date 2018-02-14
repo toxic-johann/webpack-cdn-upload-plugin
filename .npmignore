@@ -1,2 +1,5 @@
 package-lock.json
 node_modules/
+coverage/
+tests/
+src/

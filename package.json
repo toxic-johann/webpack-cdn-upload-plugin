@@ -30,7 +30,8 @@
   "dependencies": {
     "loader-utils": "^1.1.0",
     "nanoid": "^1.0.1",
-    "toxic-predicate-functions": "^0.1.5"
+    "toxic-predicate-functions": "^0.1.5",
+    "webpack-log": "^1.1.2"
   },
   "devDependencies": {
     "@types/jest": "^22.1.2",

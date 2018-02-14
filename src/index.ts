@@ -1,6 +1,8 @@
 const escapeStringRegexp = require('escape-string-regexp');
 import { isString, isFunction } from 'toxic-predicate-functions';
 import * as nanoid from 'nanoid';
+const weblog = require('webpack-log');
+const log = weblog({ name: 'webpack-cdn-upload-plugin' });
 
 function replaceFile(file: string, source: string, target: string) {
   return file.replace(new RegExp(escapeStringRegexp(source), 'g'), target);
@@ -32,6 +34,9 @@ class WebpackCdnUploadPlugin {
       replaceUrlInCss = true,
       replaceAssetsInHtml = true,
     } = options;
+    if (!isFunction(upload)) {
+      log.warn('You have not provide an upload function. If you need to upload assets to cdn, please provide an upload function or you can remove webpack-cdn-upload-plugin.');
+    }
     this.upload = upload;
     this.replaceAsyncChunkName = replaceAsyncChunkName;
     this.replaceUrlInCss = replaceUrlInCss;
@@ -216,6 +221,7 @@ class WebpackCdnUploadPlugin {
           : name;
     }
     this.chunksNameUrlMap[nameWithPublicPath] = url || nameWithPublicPath;
+    log.info(`"${name}" is uploaded and it will be as "${url || nameWithPublicPath }"`);
     return url;
   }
 }
