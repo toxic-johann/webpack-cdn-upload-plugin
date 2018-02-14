@@ -55,7 +55,7 @@
     "tslint-config-standard": "^7.0.0",
     "typescript": "^2.7.1",
     "uglifyjs-webpack-plugin": "^1.1.8",
-    "webpack": "^3.10.0"
+    "webpack": "^3.11.0"
   },
   "peerDependencies": {
     "webpack": "^3.2.0"
