@@ -539,6 +539,59 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
+  // test('support replacement on single html-webpack-plugin file with img in html', done => {
+  //   const compiler = webpack({
+  //     entry: path.join(__dirname, 'fixtures', '/html/index.js'),
+  //     output: {
+  //       path: OUTPUT_DIR,
+  //       filename: '[name].js',
+  //       chunkFilename: '[name].js',
+  //       publicPath: '/public/',
+  //     },
+  //     module: {
+  //       rules: [
+  //         {
+  //           test: /\.(png|jpe?g|gif)$/,
+  //           use: [
+  //             {
+  //               loader: 'file-loader',
+  //               options: {},
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           test: /\.(html)$/,
+  //           use: {
+  //             loader: 'html-loader',
+  //           },
+  //         },
+  //       ],
+  //     },
+  //     plugins: [
+  //       new WebpackCdnUploadPlugin({
+  //         upload(content, name) {
+  //           if (/bar/.test(name)) return;
+  //           return CDN_PREFIX + name;
+  //         },
+  //         replaceAsyncChunkName: true,
+  //       }),
+  //       new UglifyJsPlugin(),
+  //       new HtmlWebpackPlugin({
+  //         template: path.join(__dirname, 'fixtures', '/html/index.html'),
+  //       }),
+  //       new ExtractTextPlugin('[name].css'),
+  //     ],
+  //   }, function(error, result) {
+  //     expect(error).toBeFalsy();
+  //     console.log(result.compilation.errors);
+  //     expect(result.compilation.errors.length).toBe(0);
+  //     const html = result.compilation.assets['index.html'].source();
+  //     console.log(html);
+  //     done();
+  //   });
+  //   compiler.outputFileSystem = new MemoryFileSystem();
+  // });
+
   // test('recursive test', done => {
   //   const compiler = webpack({
   //     entry: {
