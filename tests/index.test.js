@@ -289,6 +289,7 @@ describe('base behavior test', () => {
           upload(content, name) {
             return CDN_PREFIX + name;
           },
+          replaceAsyncChunkName: false,
         }),
       ],
     }, function(error, result) {

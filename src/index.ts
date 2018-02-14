@@ -7,7 +7,6 @@ function replaceFile(file: string, source: string, target: string) {
 }
 
 interface Options {
-  rename?: Function | string;
   upload?: Function;
   replaceAsyncChunkName?: boolean;
   replaceUrlInCss?: boolean;
@@ -28,13 +27,11 @@ class WebpackCdnUploadPlugin {
 
   constructor(options: Options = {}) {
     const {
-      rename,
       upload,
       replaceAsyncChunkName = false,
-      replaceUrlInCss = false,
-      replaceAssetsInHtml = false,
+      replaceUrlInCss = true,
+      replaceAssetsInHtml = true,
     } = options;
-    this.rename = rename;
     this.upload = upload;
     this.replaceAsyncChunkName = replaceAsyncChunkName;
     this.replaceUrlInCss = replaceUrlInCss;
@@ -180,7 +177,7 @@ class WebpackCdnUploadPlugin {
       const asset = compilation.assets[filename];
       let fileSource = asset.source();
       if (this.replaceUrlInCss && /.css$/.test(filename)) {
-        const urls = fileSource.match(/url\((.*?)\)/g);
+        const urls = fileSource.match(/url\((.*?)\)/g) || [];
         for (const urlStr of urls) {
           const nameWithPublicPath = urlStr.slice(4, -1);
           const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];

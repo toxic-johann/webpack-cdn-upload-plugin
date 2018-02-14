@@ -1,7 +1,7 @@
 {
   "name": "webpack-cdn-upload-plugin",
   "version": "0.2.0",
-  "description": "A plugin to upload things on cdn by webpack",
+  "description": "A powerful webpack plugin which can help you to upload your assets into cdn.",
   "main": "lib/index.js",
   "scripts": {
     "test": "jest --coverage",
