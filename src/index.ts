@@ -48,7 +48,8 @@ class WebpackCdnUploadPlugin {
   }
 
   apply(compiler) {
-    compiler.plugin('this-compilation', compilation => {
+    const compilationFn = compilation => {
+      console.warn('compilation!!!');
       if (this.replaceAsyncChunkName) {
         this.markChunkName(compilation);
 
@@ -101,14 +102,23 @@ class WebpackCdnUploadPlugin {
         //   callback(null, htmlPluginData);
         // });
       }
-    });
+    };
 
-    compiler.plugin('emit', async (compilation, callback) => {
+
+    const emitFn = async compilation => {
       if (isFunction(this.upload)) {
         await this.uploadAssets(compilation);
-        callback();
-      } else callback();
-    });
+      }
+    };
+
+    if (compiler.hooks) {
+      compiler.hooks['compilation'].tap('webpack-cdn-upload-plugin', compilationFn);
+      compiler.hooks['emit'].tap('webpack-cdn-upload-plugin', emitFn);
+    } else {
+      compiler.plugin('this-compilation', compilationFn);
+
+      compiler.plugin('emit', emitFn);
+    }
   }
 
   markChunkName(compilation) {
