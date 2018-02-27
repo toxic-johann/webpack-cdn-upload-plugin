@@ -49,27 +49,26 @@ class WebpackCdnUploadPlugin {
 
   apply(compiler) {
     const compilationFn = compilation => {
-      console.warn('compilation!!!');
       if (this.replaceAsyncChunkName) {
-        this.markChunkName(compilation);
+        // this.markChunkName(compilation);
 
-        compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks, chunkGroups) => {
+        // compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks, chunkGroups) => {
 
-          // Prevent multiple rename operations
-          /* istanbul ignore if */
-          if (compilation[this.uniqueMark]) {
-            return;
-          }
-          compilation[this.uniqueMark] = true;
+        //   // Prevent multiple rename operations
+        //   /* istanbul ignore if */
+        //   if (compilation[this.uniqueMark]) {
+        //     return;
+        //   }
+        //   compilation[this.uniqueMark] = true;
 
-          chunkGroups.forEach(chunkGroup => {
-            if (chunkGroup.getParents().length) {
-              chunkGroup.chunks.forEach(chunk => {
-                chunk.filenameTemplate = this.originChunkFilename;
-              });
-            }
-          });
-        });
+        //   chunkGroups.forEach(chunkGroup => {
+        //     if (chunkGroup.getParents().length) {
+        //       chunkGroup.chunks.forEach(chunk => {
+        //         chunk.filenameTemplate = this.originChunkFilename;
+        //       });
+        //     }
+        //   });
+        // });
 
         // compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
         //   htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename]);
@@ -155,9 +154,9 @@ class WebpackCdnUploadPlugin {
         if (!uploadAble) continue;
 
         for (const chunk of chunkGroup.chunks) {
-          if (this.replaceAsyncChunkName) {
-            this.replaceAsyncChunkMapOfChunk(chunk, compilation);
-          }
+          // if (this.replaceAsyncChunkName) {
+          //   this.replaceAsyncChunkMapOfChunk(chunk, compilation);
+          // }
 
           await this.uploadChunk(chunk, compilation);
         }
