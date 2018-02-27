@@ -67,36 +67,36 @@ class WebpackCdnUploadPlugin {
           });
         });
 
-        compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
-          htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename]);
-          htmlPluginData.assets.css = htmlPluginData.assets.css.map(filename => this.chunksNameUrlMap[filename]);
-          callback(null, htmlPluginData);
-        });
+        // compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
+        //   htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename]);
+        //   htmlPluginData.assets.css = htmlPluginData.assets.css.map(filename => this.chunksNameUrlMap[filename]);
+        //   callback(null, htmlPluginData);
+        // });
       }
 
       if (this.replaceAssetsInHtml) {
-        compilation.plugin('html-webpack-plugin-after-html-processing', async (htmlPluginData, callback) => {
-          const files = Object.keys(compilation.assets);
-          let html = htmlPluginData.html;
-          for (const rawFileName of files) {
-            const nameWithPublicPath = this.originPublicPath + rawFileName;
-            if (html.indexOf('"' + nameWithPublicPath) > -1) {
-              const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
-              if (uploadedUrl) {
-                html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
-                continue;
-              }
+        // compilation.plugin('html-webpack-plugin-after-html-processing', async (htmlPluginData, callback) => {
+        //   const files = Object.keys(compilation.assets);
+        //   let html = htmlPluginData.html;
+        //   for (const rawFileName of files) {
+        //     const nameWithPublicPath = this.originPublicPath + rawFileName;
+        //     if (html.indexOf('"' + nameWithPublicPath) > -1) {
+        //       const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
+        //       if (uploadedUrl) {
+        //         html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
+        //         continue;
+        //       }
 
-              const url = await this.uploadFile(html, rawFileName);
-              if (url && isString(url)) {
-                html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
-              }
-            }
-          }
+        //       const url = await this.uploadFile(html, rawFileName);
+        //       if (url && isString(url)) {
+        //         html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
+        //       }
+        //     }
+        //   }
 
-          htmlPluginData.html = html;
-          callback(null, htmlPluginData);
-        });
+        //   htmlPluginData.html = html;
+        //   callback(null, htmlPluginData);
+        // });
       }
     });
 
@@ -130,16 +130,30 @@ class WebpackCdnUploadPlugin {
   }
 
   async uploadAssets(compilation) {
-    const { chunks } = compilation;
+    const { chunkGroups } = compilation;
     // sort chunks so that we can upload the async chunk at first
-    const sortedChunks = chunks.map(a => a)
-      .sort((a, b) => b.chunks.length - a.chunks.length);
+    // console.warn(Object.keys(compilation));
+    // chunkGroups.forEach(element => {
+    //   element.chunks.forEach(chunk => {
+    //     console.error(chunk._groups);
+    //     console.error(Object.keys(chunk));
+    //     chunk._groups.forEach(chunkGroup => {
+    //       console.log(chunkGroup.chunks);
+    //     });
+    //   });
+    //   // console.warn(Object.keys(element));
+    // });
+    // console.warn(namedChunkGroups);
+    // const sortedChunks = chunks.map(a => a)
+      // .sort((a, b) => b.chunks.length - a.chunks.length);
+    const sortedChunks = chunkGroups.reduce((prev, a) => prev.concat(a.chunks), [])
+      .sort((a, b) => b._groups.length - a._groups.length);
     while (sortedChunks.length) {
       for (let i = sortedChunks.length - 1; i > -1;i--) {
         const chunk = sortedChunks[i];
 
         // only upload when its childChunk is uploaed
-        const uploadAble = chunk.chunks.reduce((uploadAble, childChunk) => uploadAble && sortedChunks.indexOf(childChunk) === -1, true);
+        const uploadAble = Array.from(chunk._groups).reduce((uploadAble, childChunk) => uploadAble && sortedChunks.indexOf(childChunk) === -1, true);
         if (!uploadAble) continue;
 
         if (this.replaceAsyncChunkName) {
