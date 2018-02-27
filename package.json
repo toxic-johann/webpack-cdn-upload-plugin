@@ -28,33 +28,32 @@
   },
   "homepage": "https://github.com/toxic-johann/webpack-cdn-upload-plugin#readme",
   "dependencies": {
-    "loader-utils": "^1.1.0",
     "nanoid": "^1.0.1",
     "toxic-predicate-functions": "^0.1.5",
     "webpack-log": "^1.1.2"
   },
   "devDependencies": {
-    "@types/jest": "^22.1.2",
+    "@types/jest": "^22.1.3",
     "@types/webpack": "^3.8.5",
-    "css-loader": "^0.28.9",
+    "css-loader": "^0.28.10",
     "escape-string-regexp": "^1.0.5",
-    "eslint": "^4.17.0",
-    "eslint-config-egg": "^6.0.0",
-    "eslint-plugin-jest": "^21.7.0",
+    "eslint": "^4.18.1",
+    "eslint-config-egg": "^7.0.0",
+    "eslint-plugin-jest": "^21.12.2",
     "extract-text-webpack-plugin": "^3.0.2",
-    "file-loader": "^1.1.6",
+    "file-loader": "^1.1.10",
     "html-loader": "^0.5.5",
     "html-webpack-plugin": "^2.30.1",
     "husky": "^0.14.3",
-    "jest": "^22.2.1",
+    "jest": "^22.4.2",
     "memory-fs": "^0.4.1",
     "preload-webpack-plugin": "^2.2.0",
-    "style-loader": "^0.20.1",
-    "ts-jest": "^22.0.4",
+    "style-loader": "^0.20.2",
+    "ts-jest": "^22.4.0",
     "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",
-    "typescript": "^2.7.1",
-    "uglifyjs-webpack-plugin": "^1.1.8",
+    "typescript": "^2.7.2",
+    "uglifyjs-webpack-plugin": "^1.2.2",
     "webpack": "^3.11.0"
   },
   "peerDependencies": {
@@ -80,7 +79,6 @@
     "transform": {
       "^.+\\.tsx?$": "ts-jest",
       ".jsx?$": "babel-jest"
-    },
-    "mapCoverage": true
+    }
   }
 }
