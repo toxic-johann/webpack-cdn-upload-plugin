@@ -104,7 +104,6 @@ class WebpackCdnUploadPlugin {
       }
     };
 
-
     const emitFn = async compilation => {
       if (isFunction(this.upload)) {
         await this.uploadAssets(compilation);
