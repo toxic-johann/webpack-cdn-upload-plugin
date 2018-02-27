@@ -52,7 +52,8 @@ class WebpackCdnUploadPlugin {
       if (this.replaceAsyncChunkName) {
         this.markChunkName(compilation);
 
-        compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks) => {
+        compilation.plugin(['optimize-chunks', 'optimize-extracted-chunks'], (chunks, chunkGroups) => {
+
           // Prevent multiple rename operations
           /* istanbul ignore if */
           if (compilation[this.uniqueMark]) {
@@ -60,9 +61,11 @@ class WebpackCdnUploadPlugin {
           }
           compilation[this.uniqueMark] = true;
 
-          chunks.forEach((chunk) => {
-            if (chunk.parents.length) {
-              chunk.filenameTemplate = this.originChunkFilename;
+          chunkGroups.forEach(chunkGroup => {
+            if (chunkGroup.getParents().length) {
+              chunkGroup.chunks.forEach(chunk => {
+                chunk.filenameTemplate = this.originChunkFilename;
+              });
             }
           });
         });
@@ -131,37 +134,26 @@ class WebpackCdnUploadPlugin {
 
   async uploadAssets(compilation) {
     const { chunkGroups } = compilation;
-    // sort chunks so that we can upload the async chunk at first
-    // console.warn(Object.keys(compilation));
-    // chunkGroups.forEach(element => {
-    //   element.chunks.forEach(chunk => {
-    //     console.error(chunk._groups);
-    //     console.error(Object.keys(chunk));
-    //     chunk._groups.forEach(chunkGroup => {
-    //       console.log(chunkGroup.chunks);
-    //     });
-    //   });
-    //   // console.warn(Object.keys(element));
-    // });
-    // console.warn(namedChunkGroups);
-    // const sortedChunks = chunks.map(a => a)
-      // .sort((a, b) => b.chunks.length - a.chunks.length);
-    const sortedChunks = chunkGroups.reduce((prev, a) => prev.concat(a.chunks), [])
-      .sort((a, b) => b._groups.length - a._groups.length);
-    while (sortedChunks.length) {
-      for (let i = sortedChunks.length - 1; i > -1;i--) {
-        const chunk = sortedChunks[i];
+
+    const sortedChunkGroups = chunkGroups
+      .sort((a, b) => b.getChildren().length - a.getChildren().length);
+    while (sortedChunkGroups.length) {
+      for (let i = sortedChunkGroups.length - 1; i > -1;i--) {
+        const chunkGroup = sortedChunkGroups[i];
 
         // only upload when its childChunk is uploaed
-        const uploadAble = Array.from(chunk._groups).reduce((uploadAble, childChunk) => uploadAble && sortedChunks.indexOf(childChunk) === -1, true);
+        const uploadAble = chunkGroup.getChildren().reduce((uploadAble, childChunkGroup) => uploadAble && sortedChunkGroups.indexOf(childChunkGroup) === -1, true);
         if (!uploadAble) continue;
 
-        if (this.replaceAsyncChunkName) {
-          this.replaceAsyncChunkMapOfChunk(chunk, compilation);
+        for (const chunk of chunkGroup.chunks) {
+          if (this.replaceAsyncChunkName) {
+            this.replaceAsyncChunkMapOfChunk(chunk, compilation);
+          }
+
+          await this.uploadChunk(chunk, compilation);
         }
 
-        await this.uploadChunk(chunk, compilation);
-        sortedChunks.splice(i, 1);
+        sortedChunkGroups.splice(i, 1);
       }
     }
   }
