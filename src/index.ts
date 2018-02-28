@@ -180,30 +180,30 @@ class WebpackCdnUploadPlugin {
   // if a file has async chunk
   // we need to change its async chunk name before upload
   replaceAsyncChunkMapOfChunk(chunkGroup, compilation) {
-    const asyncChunkMap = chunkGroup.chunks.reduce((map, { id }) => {
-      /* istanbul ignore if */
-      if (!this.chunksIdUrlMap[id]) {
-        throw new Error(`We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`);
-      }
-      map[id] = this.chunksIdUrlMap[id];
+    const childrenChunkGroups = chunkGroup.getChildren();
+    const asyncChunkMap = childrenChunkGroups.reduce((map, chunkGroup) => {
+      chunkGroup.chunks.forEach(({ id }) => {
+        /* istanbul ignore if */
+        if (!this.chunksIdUrlMap[id]) {
+          throw new Error(`We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`);
+        }
+        map[id] = this.chunksIdUrlMap[id];
+      });
       return map;
     }, {});
-    const parentChunkGroups = chunkGroup.getParents();
-    parentChunkGroups.forEach(chunkGroup => {
-      chunkGroup.chunks.forEach(chunk => {
-        const filename = chunk.files[0];
-        const chunkFile = compilation.assets[filename];
-        const source = chunkFile.source()
-          .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
-            const [ chunkIdStr ] = $2.split(this.uniqueMark);
-            const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
-            const newText = `src=${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
-            return newText;
-          });
-        chunkFile.source = () => {
-          return source;
-        };
-      });
+    chunkGroup.chunks.forEach(chunk => {
+      const filename = chunk.files[0];
+      const chunkFile = compilation.assets[filename];
+      const source = chunkFile.source()
+        .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
+          const [ chunkIdStr ] = $2.split(this.uniqueMark);
+          const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
+          const newText = `src=${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
+          return newText;
+        });
+      chunkFile.source = () => {
+        return source;
+      };
     });
   }
 
