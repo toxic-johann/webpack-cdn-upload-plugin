@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const WebpackCdnUploadPlugin = require('../src/index.ts');
 const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, 'dist');
-// const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
+const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // // const nanoid = require('nanoid');
 // const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 // const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -81,41 +81,38 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('replace url for async chunk', done => {
-  //   expect(true).toBe(true);
-  //   const compiler = webpack({
-  //     mode: 'development',
-  //     entry: {
-  //       file: path.join(__dirname, 'fixtures', 'file.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     console.warn(Object.keys(result.compilation.assets));
-  //     const js = result.compilation.assets['file.js'].source();
-  //     // console.log(js);
-  //     // const fileNames = Object.keys(result.compilation.assets);
-  //     // expect(fileNames.includes('0.js')).toBe(true);
-  //     // eval(js);
-  //     // const scripts = document.head.getElementsByTagName('script');
-  //     // expect(scripts.length).toBe(1);
-  //     // expect(scripts[0].src).toBe(CDN_PREFIX + '0.js');
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('replace url for async chunk', done => {
+    const compiler = webpack({
+      mode: 'development',
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const js = result.compilation.assets['file.js'].source();
+      const fileNames = Object.keys(result.compilation.assets);
+      expect(fileNames.includes('0.js')).toBe(true);
+      eval(js);
+      const scripts = document.head.getElementsByTagName('script');
+      expect(scripts.length).toBe(1);
+      expect(scripts[0].src).toBe(CDN_PREFIX + '0.js');
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('replace url for multiple chunk', done => {
   //   const compiler = webpack({
