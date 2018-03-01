@@ -154,45 +154,46 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('only replace part of url for multiple chunk', done => {
-  //   const compiler = webpack({
-  //     entry: {
-  //       file: path.join(__dirname, 'fixtures', 'file-a.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           if (name !== '0.js') return;
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const js = result.compilation.assets['file.js'].source();
-  //     const fileNames = Object.keys(result.compilation.assets);
-  //     expect(fileNames.includes('0.js')).toBe(true);
-  //     expect(fileNames.includes('1.js')).toBe(true);
-  //     expect(fileNames.includes('2.js')).toBe(true);
-  //     expect(fileNames.includes('3.js')).toBe(true);
-  //     expect(fileNames.includes('file.js')).toBe(true);
-  //     eval(js);
-  //     const scripts = Array.from(document.head.getElementsByTagName('script'));
-  //     expect(scripts.length).toBe(3);
-  //     const srcs = scripts.map(({ src }) => src);
-  //     expect(srcs.includes(CDN_PREFIX + '0.js')).toBe(true);
-  //     expect(srcs.includes('1.js')).toBe(true);
-  //     expect(srcs.includes('2.js')).toBe(true);
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('only replace part of url for multiple chunk', done => {
+    const compiler = webpack({
+      mode: 'development',
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file-a.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (name !== '0.js') return;
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const js = result.compilation.assets['file.js'].source();
+      const fileNames = Object.keys(result.compilation.assets);
+      expect(fileNames.includes('0.js')).toBe(true);
+      expect(fileNames.includes('1.js')).toBe(true);
+      expect(fileNames.includes('2.js')).toBe(true);
+      expect(fileNames.includes('vendor.js')).toBe(true);
+      expect(fileNames.includes('file.js')).toBe(true);
+      eval(js);
+      const scripts = Array.from(document.head.getElementsByTagName('script'));
+      expect(scripts.length).toBe(3);
+      const srcs = scripts.map(({ src }) => src);
+      expect(srcs.includes(CDN_PREFIX + '0.js')).toBe(true);
+      expect(srcs.includes('1.js')).toBe(true);
+      expect(srcs.includes('vendor.js')).toBe(true);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('only replace part of url for multiple chunk and support publich path', done => {
   //   const compiler = webpack({
