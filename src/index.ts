@@ -131,6 +131,8 @@ class WebpackCdnUploadPlugin {
         return chunkFileName;
       },
       set(value) {
+        // // tslint:disable-next-line
+        // console.warn(`chunkFileName is set as ${chunkFileName} by webpack-upload-cdn-plugin, you can't change it to ${value}`);
         chunkFileName = value;
         return chunkFileName;
       },
