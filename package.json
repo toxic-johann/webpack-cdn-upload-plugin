@@ -8,8 +8,8 @@
     "lint": "tslint -c tslint.json  --project . --fix && eslint . --fix",
     "precommit": "npm run lint && npm t",
     "prepush": "npm t",
-    "prepublish": "npm run lint && npm t",
-    "build": "tsc --p ./"
+    "prepublishOnly": "npm run lint && npm t",
+    "prepare": "tsc --p ./"
   },
   "repository": {
     "type": "git",
@@ -37,7 +37,7 @@
     "@types/webpack": "^3.8.8",
     "css-loader": "^0.28.10",
     "escape-string-regexp": "^1.0.5",
-    "eslint": "^4.18.1",
+    "eslint": "^4.18.2",
     "eslint-config-egg": "^7.0.0",
     "eslint-plugin-jest": "^21.12.2",
     "extract-text-webpack-plugin": "^3.0.2",
@@ -49,7 +49,7 @@
     "memory-fs": "^0.4.1",
     "preload-webpack-plugin": "^2.3.0",
     "style-loader": "^0.20.2",
-    "ts-jest": "^22.4.0",
+    "ts-jest": "^22.4.1",
     "tslint": "^5.9.1",
     "tslint-config-standard": "^7.0.0",
     "typescript": "^2.7.2",

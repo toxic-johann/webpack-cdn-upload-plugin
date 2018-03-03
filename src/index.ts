@@ -68,37 +68,33 @@ class WebpackCdnUploadPlugin {
           enumerable: false,
           configurable: true,
         });
-
-        // compilation.plugin('html-webpack-plugin-before-html-processing', (htmlPluginData, callback) => {
-        //   htmlPluginData.assets.js = htmlPluginData.assets.js.map(filename => this.chunksNameUrlMap[filename]);
-        //   htmlPluginData.assets.css = htmlPluginData.assets.css.map(filename => this.chunksNameUrlMap[filename]);
-        //   callback(null, htmlPluginData);
-        // });
       }
 
-      if (this.replaceAssetsInHtml) {
-        // compilation.plugin('html-webpack-plugin-after-html-processing', async (htmlPluginData, callback) => {
-        //   const files = Object.keys(compilation.assets);
-        //   let html = htmlPluginData.html;
-        //   for (const rawFileName of files) {
-        //     const nameWithPublicPath = this.originPublicPath + rawFileName;
-        //     if (html.indexOf('"' + nameWithPublicPath) > -1) {
-        //       const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
-        //       if (uploadedUrl) {
-        //         html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
-        //         continue;
-        //       }
+      if (this.replaceAssetsInHtml && compilation.hooks.htmlWebpackPluginAfterHtmlProcessing) {
+        const afterHtmlProcessFn = async (htmlPluginData, callback) => {
+          const files = Object.keys(compilation.assets);
+          let html = htmlPluginData.html;
+          for (const rawFileName of files) {
+            const nameWithPublicPath = this.originPublicPath + rawFileName;
+            if (html.indexOf('"' + nameWithPublicPath) > -1) {
+              const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
+              if (uploadedUrl) {
+                html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
+                continue;
+              }
 
-        //       const url = await this.uploadFile(html, rawFileName);
-        //       if (url && isString(url)) {
-        //         html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
-        //       }
-        //     }
-        //   }
+              const url = await this.uploadFile(html, rawFileName);
+              if (url && isString(url)) {
+                html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
+              }
+            }
+          }
 
-        //   htmlPluginData.html = html;
-        //   callback(null, htmlPluginData);
-        // });
+          htmlPluginData.html = html;
+          callback(null, htmlPluginData);
+        };
+
+        compilation.hooks.htmlWebpackPluginAfterHtmlProcessing.tapAsync(PLUGIN_NAME, afterHtmlProcessFn);
       }
     };
 
@@ -128,16 +124,14 @@ class WebpackCdnUploadPlugin {
     } = compilation.outputOptions;
     this.originChunkFilename = originChunkFilename;
     this.originPublicPath = originPublicPath;
-    const chunkFileName = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
+    let chunkFileName = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
     compilation.outputOptions.chunkFilename = chunkFileName;
     Object.defineProperty(compilation.outputOptions, 'chunkFilename', {
       get() {
         return chunkFileName;
       },
-      set() {
-        /* istanbul ignore next */
-        console.warn(`chunkFileName is set as ${chunkFileName} by webpack-upload-cdn-plugin, you can't change it`);
-        /* istanbul ignore next */
+      set(value) {
+        chunkFileName = value;
         return chunkFileName;
       },
       configurable: true,

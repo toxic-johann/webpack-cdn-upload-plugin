@@ -15,7 +15,10 @@
     "trailing-comma": true,
     "no-console": [
       true,
-      "log"
+      "log",
+      "warn",
+      "error",
+      "info"
     ]
   }
 }

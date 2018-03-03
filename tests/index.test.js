@@ -6,7 +6,7 @@ const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // // const nanoid = require('nanoid');
 // const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
-// const HtmlWebpackPlugin = require('html-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 // const ExtractTextPlugin = require('extract-text-webpack-plugin');
 // const PreloadWebpackPlugin = require('preload-webpack-plugin');
 // const escapeStringRegexp = require('escape-string-regexp');
@@ -279,80 +279,81 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('support replacement on single html-webpack-plugin', done => {
-  //   const compiler = webpack({
-  //     entry: {
-  //       file: path.join(__dirname, 'fixtures', 'file-a.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: 'chunk-[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     const scripts = html.match(/<script.*?script>/g);
-  //     const srcs = scripts.map(script => {
-  //       const [ , src ] = script.match(/src="([^"]*)"/);
-  //       return src;
-  //     });
-  //     expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support replacement on single html-webpack-plugin', done => {
+    const compiler = webpack({
+      mode: 'development',
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file-a.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: 'chunk-[name].js',
+        publicPath: '/public/',
+      },
+      plugins: [
+        new HtmlWebpackPlugin(),
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      const scripts = html.match(/<script.*?script>/g);
+      const srcs = scripts.map(script => {
+        const [ , src ] = script.match(/src="([^"]*)"/);
+        return src;
+      });
+      expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
-  // test('support replacement on single html-webpack-plugin file with mutiple entry, and we only upload part of it', done => {
-  //   const compiler = webpack({
-  //     entry: {
-  //       file: path.join(__dirname, 'fixtures', 'file.js'),
-  //       home: path.join(__dirname, 'fixtures', 'home.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: 'chunk-[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           if (name === 'home.js') return;
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     const scripts = html.match(/<script.*?script>/g);
-  //     const srcs = scripts.map(script => {
-  //       const [ , src ] = script.match(/src="([^"]*)"/);
-  //       return src;
-  //     });
-  //     expect(srcs[0]).toBe('/public/home.js');
-  //     expect(srcs[1]).toBe(CDN_PREFIX + 'file.js');
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support replacement on single html-webpack-plugin file with mutiple entry, and we only upload part of it', done => {
+    const compiler = webpack({
+      mode: 'development',
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file.js'),
+        home: path.join(__dirname, 'fixtures', 'home.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: 'chunk-[name].js',
+        publicPath: '/public/',
+      },
+      plugins: [
+        new HtmlWebpackPlugin(),
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (name === 'home.js') return;
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      const scripts = html.match(/<script.*?script>/g);
+      const srcs = scripts.map(script => {
+        const [ , src ] = script.match(/src="([^"]*)"/);
+        return src;
+      });
+      console.log(srcs);
+      expect(srcs[1]).toBe('/public/home.js');
+      expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('support replacement on single html-webpack-plugin file with mutiple entry', done => {
   //   const compiler = webpack({
