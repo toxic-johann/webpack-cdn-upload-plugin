@@ -23,8 +23,16 @@ It's compatible with `html-webpack-plugin`, `preload-webpack-plugin`, `uglifyJsP
 
 ## Install
 
+If you are using webpack 4, you can install the latest  version.
+
 ```shell
-npm install webpack-cdn-upload-plugin --save-dev
+$ npm install webpack-cdn-upload-plugin --save-dev
+```
+
+If you want to use webpack 3 compatible version, you can install like this.
+
+```sh
+$ npm install webpack-cdn-upload-plugin@0 --save-dev
 ```
 
 ## Usage
@@ -55,13 +63,14 @@ You can set your webpack config like this.
     chunkFilename: 'chunk-[name].js',
     publicPath: 'http://cdn.toxicjohann.com/',
   },
+  mode: 'development',
   plugins: [
     new WebpackCdnUploadPlugin({
+      new HtmlWebpackPlugin(),
       upload(content, name) {
         // do some upload stuff here
       },
     }),
-    new HtmlWebpackPlugin(),
   ],
 }
 ```
@@ -108,14 +117,15 @@ So we can set the webpack config like this.
     chunkFilename: 'chunk-[name].js',
     publicPath: 'http://cdn.toxicjohann.com/',
   },
+  mode: 'development',
   plugins: [
+    new HtmlWebpackPlugin(),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
         // do some upload stuff here
       },
       replaceUrlInCss: true,
     }),
-    new HtmlWebpackPlugin(),
   ],
 }
 ```
@@ -177,6 +187,7 @@ And you turn on the `replaceAssetsInHtml` flag.
     chunkFilename: '[name].js',
     publicPath: 'http://cdn.toxicjohann.com/',
   },
+  mode: 'production',
   module: {
     rules: [
       {
@@ -197,15 +208,14 @@ And you turn on the `replaceAssetsInHtml` flag.
     ],
   },
   plugins: [
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, 'fixtures', '/html/index.html'),
+    }),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
           // do some upload job here
       },
       replaceAssetsInHtml: true,
-    }),
-    new UglifyJsPlugin(),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, 'fixtures', '/html/index.html'),
     }),
     new ExtractTextPlugin('[name].css'),
   ],
@@ -245,13 +255,13 @@ In this case, you need to return the new url in your upload function. You can se
     publicPath: 'http://another-cdn.com',
   },
   plugins: [
+    new HtmlWebpackPlugin(),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
         // do some upload stuff here
         return 'http://cdn.toxicjohann.com/' + name;
       },
     }),
-    new HtmlWebpackPlugin(),
   ],
 }
 ```
@@ -353,6 +363,8 @@ We will check all the css file and upload the file included by url if this flag 
 - default: `true`
 
 We will check all the html file and upload the file included by `script`, `link` and more.
+
+> When you are using `webpack-cdn-upload-plugin` in webpack 4 with replaceAssetsInHtml as true. You must make sure you have use `html-webpack-plugin` before `webpack-cdn-upload-plugin`.
 
 Support
 -------
