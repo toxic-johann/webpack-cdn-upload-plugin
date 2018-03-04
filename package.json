@@ -1,6 +1,6 @@
 {
   "name": "webpack-cdn-upload-plugin",
-  "version": "0.3.1",
+  "version": "1.0.0",
   "description": "A powerful webpack plugin which can help you to upload your assets into cdn.",
   "main": "lib/index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "precommit": "npm run lint && npm t",
     "prepush": "npm t",
     "prepublishOnly": "npm run lint && npm t",
-    "prepare": "tsc --p ./"
+    "build": "tsc --p ./"
   },
   "repository": {
     "type": "git",
