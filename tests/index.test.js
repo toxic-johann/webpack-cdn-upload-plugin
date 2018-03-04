@@ -20,6 +20,7 @@ describe('base behavior test', () => {
 
   test('no upload still run', done => {
     const compiler = webpack({
+      mode: 'development',
       entry: {
         file: path.join(__dirname, 'fixtures', 'file.js'),
         home: path.join(__dirname, 'fixtures', 'home.js'),
@@ -48,6 +49,7 @@ describe('base behavior test', () => {
     const fn = jest.fn();
     const fileNames = [];
     const compiler = webpack({
+      mode: 'development',
       entry: {
         file: path.join(__dirname, 'fixtures', 'file.js'),
         home: path.join(__dirname, 'fixtures', 'home.js'),
