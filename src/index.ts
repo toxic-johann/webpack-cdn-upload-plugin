@@ -34,7 +34,7 @@ class WebpackCdnUploadPlugin {
       upload,
       replaceAsyncChunkName = false,
       replaceUrlInCss = true,
-      replaceAssetsInHtml = true,
+      replaceAssetsInHtml = false,
     } = options;
     if (!isFunction(upload)) {
       log.warn(`You have not provide an upload function. If you need to upload assets to cdn, please provide an upload function or you can remove ${PLUGIN_NAME}.`);
@@ -50,67 +50,71 @@ class WebpackCdnUploadPlugin {
   }
 
   apply(compiler) {
-    const compilationFn = compilation => {
-      if (this.replaceAsyncChunkName) {
-        this.markChunkName(compilation);
+    if (!compiler.hooks) {
+      const message = `The webpack you used do not support compiler hooks. Please install ${PLUGIN_NAME}@0`;
+      log.error(message);
+      throw new Error(message);
+    }
+    compiler.hooks['compilation'].tap(PLUGIN_NAME, this.compilationFn.bind(this));
+    compiler.hooks['emit'].tap(PLUGIN_NAME, this.emitFn.bind(this));
+  }
 
-        const originGetPath = compilation.getPath;
-        const self = this;
+  compilationFn(compilation) {
+    if (this.replaceAsyncChunkName) {
+      this.markChunkName(compilation);
 
-        Object.defineProperty(compilation, 'getPath', {
-          value(...args) {
-            const filenameTemplate: string = args.shift();
-            const filterFilenameTemplate = self.restoreChunkName(filenameTemplate);
-            args.unshift(filterFilenameTemplate);
-            return originGetPath.bind(this)(...args);
-          },
-          writable: true,
-          enumerable: false,
-          configurable: true,
-        });
+      const originGetPath = compilation.getPath;
+      const self = this;
+
+      Object.defineProperty(compilation, 'getPath', {
+        value(...args) {
+          const filenameTemplate: string = args.shift();
+          const filterFilenameTemplate = self.restoreChunkName(filenameTemplate);
+          args.unshift(filterFilenameTemplate);
+          return originGetPath.bind(this)(...args);
+        },
+        writable: true,
+        enumerable: false,
+        configurable: true,
+      });
+    }
+
+    if (this.replaceAssetsInHtml) {
+      if (!compilation.hooks.htmlWebpackPluginAfterHtmlProcessing) {
+        const message = `We can't find compilation.hooks.htmlWebpackPluginAfterHtmlProcessing in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
+        log.error(message);
+        throw new Error(message);
       }
+      const afterHtmlProcessFn = async (htmlPluginData, callback) => {
+        const files = Object.keys(compilation.assets);
+        let html = htmlPluginData.html;
+        for (const rawFileName of files) {
+          const nameWithPublicPath = this.originPublicPath + rawFileName;
+          if (html.indexOf('"' + nameWithPublicPath) > -1) {
+            const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
+            if (uploadedUrl) {
+              html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
+              continue;
+            }
 
-      if (this.replaceAssetsInHtml && compilation.hooks.htmlWebpackPluginAfterHtmlProcessing) {
-        const afterHtmlProcessFn = async (htmlPluginData, callback) => {
-          const files = Object.keys(compilation.assets);
-          let html = htmlPluginData.html;
-          for (const rawFileName of files) {
-            const nameWithPublicPath = this.originPublicPath + rawFileName;
-            if (html.indexOf('"' + nameWithPublicPath) > -1) {
-              const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
-              if (uploadedUrl) {
-                html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
-                continue;
-              }
-
-              const url = await this.uploadFile(html, rawFileName);
-              if (url && isString(url)) {
-                html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
-              }
+            const url = await this.uploadFile(html, rawFileName);
+            if (url && isString(url)) {
+              html = replaceFile(html, '"' + nameWithPublicPath, '"' + url);
             }
           }
+        }
 
-          htmlPluginData.html = html;
-          callback(null, htmlPluginData);
-        };
+        htmlPluginData.html = html;
+        callback(null, htmlPluginData);
+      };
 
-        compilation.hooks.htmlWebpackPluginAfterHtmlProcessing.tapAsync(PLUGIN_NAME, afterHtmlProcessFn);
-      }
-    };
+      compilation.hooks.htmlWebpackPluginAfterHtmlProcessing.tapAsync(PLUGIN_NAME, afterHtmlProcessFn);
+    }
+  }
 
-    const emitFn = async compilation => {
-      if (isFunction(this.upload)) {
-        await this.uploadAssets(compilation);
-      }
-    };
-
-    if (compiler.hooks) {
-      compiler.hooks['compilation'].tap(PLUGIN_NAME, compilationFn);
-      compiler.hooks['emit'].tap(PLUGIN_NAME, emitFn);
-    } else {
-      compiler.plugin('this-compilation', compilationFn);
-
-      compiler.plugin('emit', emitFn);
+  async emitFn(compilation) {
+    if (isFunction(this.upload)) {
+      await this.uploadAssets(compilation);
     }
   }
 

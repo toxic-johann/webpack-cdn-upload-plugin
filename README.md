@@ -360,7 +360,7 @@ We will check all the css file and upload the file included by url if this flag 
 ### replaceAssetsInHtml
 
 - type: `boolean`
-- default: `true`
+- default: `false`
 
 We will check all the html file and upload the file included by `script`, `link` and more.
 

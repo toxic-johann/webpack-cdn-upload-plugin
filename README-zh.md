@@ -17,8 +17,16 @@
 
 ## 安装
 
+如果你正在使用 webpack 4, 请按照以下方式安装。
+
 ```shell
-npm install webpack-cdn-upload-plugin --save-dev
+$ npm install webpack-cdn-upload-plugin --save-dev
+```
+
+如果你希望使用 webpack 3，请安装旧版本。
+
+```shell
+$ npm install webpack-cdn-upload-plugin@0 --save-dev
 ```
 
 ## 用法
@@ -45,13 +53,14 @@ async function upload(content: string, name: string, chunk?: Object): string | u
     chunkFilename: 'chunk-[name].js',
     publicPath: 'http://cdn.toxicjohann.com/',
   },
+  mode: 'development',
   plugins: [
+    new HtmlWebpackPlugin(),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
         // 在此处完成上传的工作
       },
     }),
-    new HtmlWebpackPlugin(),
   ],
 }
 ```
@@ -96,14 +105,15 @@ body {
     chunkFilename: 'chunk-[name].js',
     publicPath: 'http://cdn.toxicjohann.com/',
   },
+  mode: 'development',
   plugins: [
+    new HtmlWebpackPlugin(),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
         // 在此处完成上传的工作
       },
       replaceUrlInCss: true,
     }),
-    new HtmlWebpackPlugin(),
   ],
 }
 ```
@@ -165,6 +175,7 @@ body {
     chunkFilename: '[name].js',
     publicPath: 'http://cdn.toxicjohann.com/',
   },
+  mode: 'prooduction',
   module: {
     rules: [
       {
@@ -185,15 +196,14 @@ body {
     ],
   },
   plugins: [
+    new HtmlWebpackPlugin({
+      template: path.join(__dirname, 'fixtures', '/html/index.html'),
+    }),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
           // 在此处完成上传的工作
       },
       replaceAssetsInHtml: true,
-    }),
-    new UglifyJsPlugin(),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, 'fixtures', '/html/index.html'),
     }),
     new ExtractTextPlugin('[name].css'),
   ],
@@ -232,14 +242,15 @@ body {
     chunkFilename: 'chunk-[name].js',
     publicPath: 'http://another-cdn.com',
   },
+  mode: 'development',
   plugins: [
+    new HtmlWebpackPlugin(),
     new WebpackCdnUploadPlugin({
       upload(content, name) {
         // 进行上传工作并返回地址
         return 'http://cdn.toxicjohann.com/' + name;
       },
     }),
-    new HtmlWebpackPlugin(),
   ],
 }
 ```
@@ -283,6 +294,7 @@ import('./module-a.js');
     path: OUTPUT_DIR,
     filename: '[name].js',
   },
+  mode: 'development',
   plugins: [
     new WebpackCdnUploadPlugin({
       upload(content, name) {
@@ -336,6 +348,8 @@ async function upload(content: string, name: string, chunk?: Object): string | u
 ### replaceAssetsInHtml
 
 - 类型: `boolean`
-- 默认: `true`
+- 默认: `false`
 
 打开此地址，我们会检查 html 文件，并将 url 中的静态文件上传。
+
+> 使用此方式时，请确保 html-webpack-plugin 置于 webpack-cdn-upload-plugin 前。

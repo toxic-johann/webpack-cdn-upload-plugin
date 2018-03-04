@@ -298,6 +298,7 @@ describe('base behavior test', () => {
             return CDN_PREFIX + name;
           },
           replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
         }),
       ],
     }, function(error, result) {
@@ -336,6 +337,7 @@ describe('base behavior test', () => {
             return CDN_PREFIX + name;
           },
           replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
         }),
       ],
     }, function(error, result) {
@@ -374,6 +376,7 @@ describe('base behavior test', () => {
             return CDN_PREFIX + name;
           },
           replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
         }),
       ],
     }, function(error, result) {
@@ -424,6 +427,7 @@ describe('base behavior test', () => {
             return CDN_PREFIX + name;
           },
           replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
         }),
         new ExtractTextPlugin('[name].css'),
       ],
