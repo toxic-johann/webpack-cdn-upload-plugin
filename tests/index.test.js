@@ -7,9 +7,9 @@ const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 // // const nanoid = require('nanoid');
 // const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-// const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 // const PreloadWebpackPlugin = require('preload-webpack-plugin');
-// const escapeStringRegexp = require('escape-string-regexp');
+const escapeStringRegexp = require('escape-string-regexp');
 // const ToxicWebpackManifestPlugin = require('toxic-webpack-manifest-plugin');
 // const fs = require('fs');
 
@@ -385,7 +385,6 @@ describe('base behavior test', () => {
         const [ , src ] = script.match(/src="([^"]*)"/);
         return src;
       });
-      console.log(srcs);
       expect(srcs[1]).toBe(CDN_PREFIX + 'home.js');
       expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
       done();
@@ -393,121 +392,121 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('support replacement on single html-webpack-plugin file with css', done => {
-  //   const compiler = webpack({
-  //     entry: {
-  //       foo: path.join(__dirname, 'fixtures', '/css/foo.js'),
-  //       bar: path.join(__dirname, 'fixtures', '/css/bar.js'),
-  //     },
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: '[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     module: {
-  //       rules: [
-  //         {
-  //           test: /\.css$/,
-  //           use: ExtractTextPlugin.extract({
-  //             fallback: 'style-loader',
-  //             use: 'css-loader',
-  //           }),
-  //         },
-  //       ],
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           if (/bar/.test(name)) return;
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //       new ExtractTextPlugin('[name].css'),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     const scripts = html.match(/<script.*?script>/g);
-  //     const srcs = scripts.map(script => {
-  //       const [ , src ] = script.match(/src="([^"]*)"/);
-  //       return src;
-  //     });
-  //     expect(srcs[0]).toBe(CDN_PREFIX + 'foo.js');
-  //     expect(srcs[1]).toBe('/public/bar.js');
-  //     const styles = html.match(/<link[^>]*>/g);
-  //     const hrefs = styles.map(style => {
-  //       const [ , src ] = style.match(/href="([^"]*)"/);
-  //       return src;
-  //     });
-  //     expect(hrefs[0]).toBe(CDN_PREFIX + 'foo.css');
-  //     expect(hrefs[1]).toBe('/public/bar.css');
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support replacement on single html-webpack-plugin file with css', done => {
+    const compiler = webpack({
+      mode: 'development',
+      entry: {
+        foo: path.join(__dirname, 'fixtures', '/css/foo.js'),
+        bar: path.join(__dirname, 'fixtures', '/css/bar.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      module: {
+        rules: [
+          {
+            test: /\.css$/,
+            use: ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: 'css-loader',
+            }),
+          },
+        ],
+      },
+      plugins: [
+        new HtmlWebpackPlugin(),
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (/bar/.test(name)) return;
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+        }),
+        new ExtractTextPlugin('[name].css'),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      const scripts = html.match(/<script.*?script>/g);
+      const srcs = scripts.map(script => {
+        const [ , src ] = script.match(/src="([^"]*)"/);
+        return src;
+      });
+      expect(srcs[0]).toBe(CDN_PREFIX + 'foo.js');
+      expect(srcs[1]).toBe('/public/bar.js');
+      const styles = html.match(/<link[^>]*>/g);
+      const hrefs = styles.map(style => {
+        const [ , src ] = style.match(/href="([^"]*)"/);
+        return src;
+      });
+      expect(hrefs[0]).toBe(CDN_PREFIX + 'foo.css');
+      expect(hrefs[1]).toBe('/public/bar.css');
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
-  // test('support replacement on single html-webpack-plugin file with image', done => {
-  //   const fileNames = [];
-  //   const compiler = webpack({
-  //     entry: path.join(__dirname, 'fixtures', '/file/index.js'),
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: '[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     module: {
-  //       rules: [
-  //         {
-  //           test: /\.css$/,
-  //           use: ExtractTextPlugin.extract({
-  //             fallback: 'style-loader',
-  //             use: 'css-loader',
-  //           }),
-  //         },
-  //         {
-  //           test: /\.(png|jpe?g|gif)$/,
-  //           use: [
-  //             {
-  //               loader: 'file-loader',
-  //               options: {},
-  //             },
-  //           ],
-  //         },
-  //       ],
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           if (/png/.test(name)) return;
-  //           fileNames.push(name);
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //         replaceUrlInCss: true,
-  //         replaceAssetsInHtml: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //       new ExtractTextPlugin('[name].css'),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     expect(fileNames.join('|').indexOf('jpeg') > -1).toBe(true);
-  //     const css = result.compilation.assets['main.css'].source();
-  //     const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
-  //     expect((new RegExp(`url\\(${cdnRegExpStr}.*\.jpeg`)).test(css)).toBe(true);
-  //     expect((new RegExp(`url\\(${cdnRegExpStr}.*\.png`)).test(css)).toBe(false);
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support replacement on single html-webpack-plugin file with image', done => {
+    const fileNames = [];
+    const compiler = webpack({
+      mode: 'development',
+      entry: path.join(__dirname, 'fixtures', '/file/index.js'),
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      module: {
+        rules: [
+          {
+            test: /\.css$/,
+            use: ExtractTextPlugin.extract({
+              fallback: 'style-loader',
+              use: 'css-loader',
+            }),
+          },
+          {
+            test: /\.(png|jpe?g|gif)$/,
+            use: [
+              {
+                loader: 'file-loader',
+                options: {},
+              },
+            ],
+          },
+        ],
+      },
+      plugins: [
+        new HtmlWebpackPlugin(),
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (/png/.test(name)) return;
+            fileNames.push(name);
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+          replaceUrlInCss: true,
+          replaceAssetsInHtml: true,
+        }),
+        new ExtractTextPlugin('[name].css'),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      expect(fileNames.join('|').indexOf('jpeg') > -1).toBe(true);
+      const css = result.compilation.assets['main.css'].source();
+      const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
+      expect((new RegExp(`url\\(${cdnRegExpStr}.*\.jpeg`)).test(css)).toBe(true);
+      expect((new RegExp(`url\\(${cdnRegExpStr}.*\.png`)).test(css)).toBe(false);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('support preload webpack plugin', done => {
   //   const compiler = webpack({
@@ -540,60 +539,60 @@ describe('base behavior test', () => {
   //   compiler.outputFileSystem = new MemoryFileSystem();
   // });
 
-  // test('support replacement on single html-webpack-plugin file with img in html', done => {
-  //   const compiler = webpack({
-  //     entry: path.join(__dirname, 'fixtures', '/html/index.js'),
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: '[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     module: {
-  //       rules: [
-  //         {
-  //           test: /\.(png|jpe?g|gif)$/,
-  //           use: [
-  //             {
-  //               loader: 'file-loader',
-  //               options: {},
-  //             },
-  //           ],
-  //         },
-  //         {
-  //           test: /\.(html)$/,
-  //           use: {
-  //             loader: 'html-loader',
-  //           },
-  //         },
-  //       ],
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           if (/png/.test(name)) return;
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //         replaceAssetsInHtml: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin({
-  //         template: path.join(__dirname, 'fixtures', '/html/index.html'),
-  //       }),
-  //       new ExtractTextPlugin('[name].css'),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
-  //     expect((new RegExp(`${cdnRegExpStr}.*\.jpeg`)).test(html)).toBe(true);
-  //     expect((new RegExp(`${cdnRegExpStr}.*\.png`)).test(html)).toBe(false);
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
+  test('support replacement on single html-webpack-plugin file with img in html', done => {
+    const compiler = webpack({
+      mode: 'development',
+      entry: path.join(__dirname, 'fixtures', '/html/index.js'),
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[name].js',
+        publicPath: '/public/',
+      },
+      module: {
+        rules: [
+          {
+            test: /\.(png|jpe?g|gif)$/,
+            use: [
+              {
+                loader: 'file-loader',
+                options: {},
+              },
+            ],
+          },
+          {
+            test: /\.(html)$/,
+            use: {
+              loader: 'html-loader',
+            },
+          },
+        ],
+      },
+      plugins: [
+        new HtmlWebpackPlugin({
+          template: path.join(__dirname, 'fixtures', '/html/index.html'),
+        }),
+        new WebpackCdnUploadPlugin({
+          upload(content, name) {
+            if (/png/.test(name)) return;
+            return CDN_PREFIX + name;
+          },
+          replaceAsyncChunkName: true,
+          replaceAssetsInHtml: true,
+        }),
+        new ExtractTextPlugin('[name].css'),
+      ],
+    }, function(error, result) {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const html = result.compilation.assets['index.html'].source();
+      const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
+      expect((new RegExp(`${cdnRegExpStr}.*\.jpeg`)).test(html)).toBe(true);
+      expect((new RegExp(`${cdnRegExpStr}.*\.png`)).test(html)).toBe(false);
+      done();
+    });
+    compiler.outputFileSystem = new MemoryFileSystem();
+  });
 
   // test('recursive test', done => {
   //   const compiler = webpack({

@@ -39,8 +39,8 @@
     "escape-string-regexp": "^1.0.5",
     "eslint": "^4.18.2",
     "eslint-config-egg": "^7.0.0",
-    "eslint-plugin-jest": "^21.12.2",
-    "extract-text-webpack-plugin": "^3.0.2",
+    "eslint-plugin-jest": "^21.12.3",
+    "extract-text-webpack-plugin": "^4.0.0-beta.0",
     "file-loader": "^1.1.11",
     "html-loader": "^0.5.5",
     "html-webpack-plugin": "^3.0.4",
@@ -54,7 +54,7 @@
     "tslint-config-standard": "^7.0.0",
     "typescript": "^2.7.2",
     "uglifyjs-webpack-plugin": "^1.2.2",
-    "webpack": "^4.0.1"
+    "webpack": "^4.1.0"
   },
   "peerDependencies": {
     "webpack": "^3.2.0"
