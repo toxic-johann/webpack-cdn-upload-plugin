@@ -50,6 +50,7 @@ class WebpackCdnUploadPlugin {
   }
 
   apply(compiler) {
+    /* istanbul ignore if  */
     if (!compiler.hooks) {
       const message = `The webpack you used do not support compiler hooks. Please install ${PLUGIN_NAME}@0`;
       log.error(message);
@@ -80,6 +81,7 @@ class WebpackCdnUploadPlugin {
     }
 
     if (this.replaceAssetsInHtml) {
+      /* istanbul ignore if  */
       if (!compilation.hooks.htmlWebpackPluginAfterHtmlProcessing) {
         const message = `We can't find compilation.hooks.htmlWebpackPluginAfterHtmlProcessing in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
         log.error(message);
@@ -92,6 +94,7 @@ class WebpackCdnUploadPlugin {
           const nameWithPublicPath = this.originPublicPath + rawFileName;
           if (html.indexOf('"' + nameWithPublicPath) > -1) {
             const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
+            /* istanbul ignore if  */
             if (uploadedUrl) {
               html = replaceFile(html, '"' + nameWithPublicPath, '"' + uploadedUrl);
               continue;
@@ -156,6 +159,7 @@ class WebpackCdnUploadPlugin {
 
         // only upload when its childChunk is uploaed
         const uploadAble = chunkGroup.getChildren().reduce((uploadAble, childChunkGroup) => uploadAble && sortedChunkGroups.indexOf(childChunkGroup) === -1, true);
+        /* istanbul ignore if  */
         if (!uploadAble) continue;
 
         for (const chunk of chunkGroup.chunks) {
@@ -226,6 +230,7 @@ class WebpackCdnUploadPlugin {
           const rawPath = nameWithPublicPath.replace(this.originPublicPath, '');
           const rawSource = compilation.assets[rawPath];
           // sometimes it maybe inline base64
+          /* istanbul ignore if  */
           if (!rawSource) continue;
 
           const source = rawSource.source();
