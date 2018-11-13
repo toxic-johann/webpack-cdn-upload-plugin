@@ -204,7 +204,8 @@ class WebpackCdnUploadPlugin {
           const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
           const newText = `src=${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
           return newText;
-        });
+        })
+        .replace(new RegExp(`__webpack_require__.p \\+ "${this.uniqueMark}" \\+ chunkId \\+ "${this.uniqueMark}" \\+ \\(\\{[^\}]*\\}\\[chunkId\\]\\|\\|chunkId\\) \\+ "\\.js${this.uniqueMark}"`, 'g'), `${JSON.stringify(asyncChunkMap)}[chunkId] || chunkId`);
       chunkFile.source = () => {
         return source;
       };
