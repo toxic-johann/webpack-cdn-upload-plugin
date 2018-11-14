@@ -7,6 +7,7 @@
     "test": "jest --coverage",
     "jest": "jest",
     "lint": "tslint -c tslint.json  --project . --fix && eslint . --fix",
+    "precommit": "npm run lint && npm t",
     "prepush": "npm t",
     "prepublishOnly": "npm run lint && npm t",
     "build": "tsc --p ./"
