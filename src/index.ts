@@ -138,7 +138,7 @@ class WebpackCdnUploadPlugin {
         return chunkFileName;
       },
       set(value) {
-        // // tslint:disable-next-line
+        // tslint:disable-next-line
         // console.warn(`chunkFileName is set as ${chunkFileName} by webpack-upload-cdn-plugin, you can't change it to ${value}`);
         chunkFileName = value;
         return chunkFileName;
@@ -198,12 +198,17 @@ class WebpackCdnUploadPlugin {
     chunkGroup.chunks.forEach(chunk => {
       const filename = chunk.files[0];
       const chunkFile = compilation.assets[filename];
-      const source = chunkFile.source()
-        .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
-          const [ chunkIdStr ] = $2.split(this.uniqueMark);
-          const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
-          const newText = `src=${JSON.stringify(asyncChunkMap)}[${chunkIdVariable}]`;
-          return newText;
+      const originSource = chunkFile.source();
+      const source = originSource
+        // .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
+        //   const [ chunkIdStr ] = $2.split(this.uniqueMark);
+        //   const chunkIdVariable = chunkIdStr.replace(/\s|\+|"/g, '');
+        //   const newText = `src=(${JSON.stringify(asyncChunkMap)})[${chunkIdVariable}]`;
+        //   return newText;
+        // })
+        .replace(new RegExp(`[a-zA-Z_]+\.p\\s?\\+\\s?"${this.uniqueMark}"(.*?)"${this.uniqueMark}[^"]*"(.*?)"\\.js${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
+          const chunkIdVariable = $1.replace(/\s|\+/g, '');
+          return `(${JSON.stringify(asyncChunkMap)})[${chunkIdVariable}] || ${chunkIdVariable}`;
         });
       chunkFile.source = () => {
         return source;
