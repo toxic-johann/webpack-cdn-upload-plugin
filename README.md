@@ -4,7 +4,7 @@
 [![Coverage Status](https://img.shields.io/coveralls/toxic-johann/webpack-cdn-upload-plugin/master.svg?style=flat-square)](https://coveralls.io/github/toxic-johann/webpack-cdn-upload-plugin?branch=master)
 [![npm](https://img.shields.io/npm/v/webpack-cdn-upload-plugin.svg?colorB=brightgreen&style=flat-square)](https://www.npmjs.com/package/webpack-cdn-upload-plugin)
 [![dependency Status](https://david-dm.org/toxic-johann/webpack-cdn-upload-plugin.svg)](https://david-dm.org/toxic-johann/webpack-cdn-upload-plugin)
-[![devDependency Status](https://david-dm.org/toxic-johann/webpack-cdn-upload-plugin/dev-status.svg)](https://david-dm.org/toxic-johann/webpack-cdn-upload-plugin?type=dev)
+[![devDependency Status](https://david-dm.org/toxic-johann/webpack-cdn-upload-plugin/dev-status.svg)](https://david-dm.org/toxic-johann/webpack-cdn-upload-plugin?type=dev) [![Greenkeeper badge](https://badges.greenkeeper.io/toxic-johann/webpack-cdn-upload-plugin.svg)](https://greenkeeper.io/)
 
 
 > A powerful webpack plugin which can help you to upload your assets into cdn.
