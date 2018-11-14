@@ -6,9 +6,6 @@
   "scripts": {
     "test": "jest --coverage",
     "lint": "tslint -c tslint.json  --project . --fix && eslint . --fix",
-    "precommit": "npm run lint && npm t",
-    "prepush": "npm t",
-    "prepublishOnly": "npm run lint && npm t",
     "build": "tsc --p ./"
   },
   "repository": {
