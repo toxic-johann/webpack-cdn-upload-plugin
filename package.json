@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/jest": "^23.3.9",
     "@types/webpack": "^4.4.19",
-    "css-loader": "^1.0.1",
+    "css-loader": "^2.0.0",
     "escape-string-regexp": "^1.0.5",
     "eslint": "^5.9.0",
     "eslint-config-egg": "^7.1.0",
