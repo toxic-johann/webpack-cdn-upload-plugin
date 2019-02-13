@@ -34,7 +34,7 @@
     "webpack-log": "^2.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^23.3.9",
+    "@types/jest": "^24.0.0",
     "@types/webpack": "^4.4.19",
     "css-loader": "^2.0.0",
     "escape-string-regexp": "^1.0.5",
