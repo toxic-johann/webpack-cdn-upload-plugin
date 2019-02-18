@@ -50,7 +50,7 @@
     "memory-fs": "^0.4.1",
     "preload-webpack-plugin": "^2.3.0",
     "style-loader": "^0.23.1",
-    "ts-jest": "^23.10.4",
+    "ts-jest": "^24.0.0",
     "tslint": "^5.11.0",
     "tslint-config-standard": "^8.0.1",
     "typescript": "^3.1.6",
