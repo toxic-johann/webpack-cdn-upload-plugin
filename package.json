@@ -30,7 +30,7 @@
   "homepage": "https://github.com/toxic-johann/webpack-cdn-upload-plugin#readme",
   "dependencies": {
     "nanoid": "^2.0.1",
-    "toxic-predicate-functions": "^0.2.4",
+    "toxic-predicate-functions": "^0.3.0",
     "webpack-log": "^2.0.0"
   },
   "devDependencies": {
