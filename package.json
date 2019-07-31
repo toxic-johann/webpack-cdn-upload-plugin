@@ -10,6 +10,9 @@
     "precommit": "npm run lint",
     "prepush": "npm t",
     "prepublishOnly": "npm run lint && npm t",
+    "preversion": "npm test",
+    "version": "npm run build && git add -A lib",
+    "postversion": "git push --no-verify && git push --tags --no-verify",
     "build": "tsc --p ./"
   },
   "repository": {
