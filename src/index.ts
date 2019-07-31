@@ -1,5 +1,5 @@
 const escapeStringRegexp = require('escape-string-regexp');
-import { isString, isFunction } from 'toxic-predicate-functions';
+import { isString, isFunction } from 'lodash';
 import * as nanoid from 'nanoid';
 const weblog = require('webpack-log');
 
