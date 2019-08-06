@@ -52,7 +52,7 @@
     "jest": "^24.7.1",
     "memory-fs": "^0.4.1",
     "preload-webpack-plugin": "^2.3.0",
-    "style-loader": "^0.23.1",
+    "style-loader": "^1.0.0",
     "ts-jest": "^24.0.2",
     "tslint": "^5.16.0",
     "tslint-config-standard": "^8.0.1",
