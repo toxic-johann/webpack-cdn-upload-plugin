@@ -34,7 +34,7 @@
   "dependencies": {
     "lodash": "^4.17.15",
     "nanoid": "^2.0.1",
-    "webpack-log": "^2.0.0"
+    "webpack-log": "^3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.11",
