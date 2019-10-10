@@ -10,9 +10,8 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 // const PreloadWebpackPlugin = require('preload-webpack-plugin');
 const escapeStringRegexp = require('escape-string-regexp');
 // const ToxicWebpackManifestPlugin = require('toxic-webpack-manifest-plugin');
-// const fs = require('fs');
+// const mfs = require('fs');
 const mfs = require('./helpers/mfs');
-
 
 
 describe('base behavior test', () => {
