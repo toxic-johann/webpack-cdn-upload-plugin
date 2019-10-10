@@ -1,4 +1,3 @@
-const MemoryFileSystem = require('memory-fs');
 const webpack = require('webpack');
 const WebpackCdnUploadPlugin = require('../src/index.ts');
 const path = require('path');
@@ -12,6 +11,9 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const escapeStringRegexp = require('escape-string-regexp');
 // const ToxicWebpackManifestPlugin = require('toxic-webpack-manifest-plugin');
 // const fs = require('fs');
+const mfs = require('./helpers/mfs');
+
+
 
 describe('base behavior test', () => {
   beforeEach(() => {
@@ -42,7 +44,7 @@ describe('base behavior test', () => {
       expect(scripts[0].src).toBe('http://localhost/0.js');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('call upload function for each chunk', done => {
@@ -80,7 +82,7 @@ describe('base behavior test', () => {
       expect(scripts[0].src).toBe('http://localhost/0.js');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('replace url for async chunk', done => {
@@ -113,7 +115,7 @@ describe('base behavior test', () => {
       expect(scripts[0].src).toBe(CDN_PREFIX + '0.js');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('replace url for multiple chunk', done => {
@@ -153,7 +155,7 @@ describe('base behavior test', () => {
       expect(srcs.includes(CDN_PREFIX + 'vendor.js')).toBe(true);
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('only replace part of url for multiple chunk', done => {
@@ -194,7 +196,7 @@ describe('base behavior test', () => {
       expect(srcs.includes('http://localhost/vendor.js')).toBe(true);
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   // test('only replace part of url for multiple chunk and support publich path', done => {
@@ -237,7 +239,7 @@ describe('base behavior test', () => {
   //     expect(srcs.includes('http://localhost/public/vendor.js')).toBe(true);
   //     done();
   //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
+  //   compiler.outputFileSystem = mfs;
   // });
 
   test('support upload multiple chunk and do not affect publich path in async chunk when we do not replace async chunk name', done => {
@@ -278,7 +280,7 @@ describe('base behavior test', () => {
       expect(srcs.includes('http://localhost/public/vendor.js')).toBe(true);
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('support replacement on single html-webpack-plugin', done => {
@@ -315,7 +317,7 @@ describe('base behavior test', () => {
       expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('support replacement on single html-webpack-plugin file with mutiple entry, and we only upload part of it', done => {
@@ -355,7 +357,7 @@ describe('base behavior test', () => {
       expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('support replacement on single html-webpack-plugin file with mutiple entry', done => {
@@ -394,7 +396,7 @@ describe('base behavior test', () => {
       expect(srcs[0]).toBe(CDN_PREFIX + 'file.js');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('support replacement on single html-webpack-plugin file with css', done => {
@@ -453,7 +455,7 @@ describe('base behavior test', () => {
       expect(hrefs[1]).toBe('/public/bar.css');
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   test('support replacement on single html-webpack-plugin file with image', done => {
@@ -511,7 +513,7 @@ describe('base behavior test', () => {
       expect((new RegExp(`url\\(${cdnRegExpStr}.*\.png`)).test(css)).toBe(false);
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   // test('support preload webpack plugin', done => {
@@ -542,7 +544,7 @@ describe('base behavior test', () => {
   //     expect(html.indexOf('http://cdn.toxicjohann.com/0.js') > -1).toBe(true);
   //     done();
   //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
+  //   compiler.outputFileSystem = mfs;
   // });
 
   test('support replacement on single html-webpack-plugin file with img in html', done => {
@@ -597,7 +599,7 @@ describe('base behavior test', () => {
       expect((new RegExp(`${cdnRegExpStr}.*\.png`)).test(html)).toBe(false);
       done();
     });
-    compiler.outputFileSystem = new MemoryFileSystem();
+    compiler.outputFileSystem = mfs;
   });
 
   // test('recursive test', done => {
@@ -636,7 +638,7 @@ describe('base behavior test', () => {
   //     // expect(srcs.includes('/public/2.js')).toBe(true);
   //     done();
   //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
+  //   compiler.outputFileSystem = mfs;
   // });
 });
 
