@@ -84,9 +84,7 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = mfs;
   });
 
-  test('replace url for async chunk', () => {
-    let resolveFn;
-    const promise = new Promise(resolve => { resolveFn = resolve; });
+  test('replace url for async chunk', done => {
     const compiler = webpack({
       mode: 'development',
       entry: {
@@ -114,10 +112,9 @@ describe('base behavior test', () => {
       const scripts = document.head.getElementsByTagName('script');
       expect(scripts.length).toBe(1);
       expect(scripts[0].src).toBe(CDN_PREFIX + '0.js');
-      resolveFn();
+      done();
     });
     compiler.outputFileSystem = mfs;
-    return promise;
   });
 
   test('replace url for multiple chunk', done => {
