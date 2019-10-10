@@ -4,7 +4,7 @@
   "description": "A powerful webpack plugin which can help you to upload your assets into cdn.",
   "main": "lib/index.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage --maxWorkers=4",
     "jest": "jest",
     "lint": "tslint -c tslint.json  --project . --fix && eslint . --fix",
     "precommit": "npm run lint",
