@@ -1,6 +1,6 @@
 {
   "name": "webpack-cdn-upload-plugin",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "A powerful webpack plugin which can help you to upload your assets into cdn.",
   "main": "lib/index.js",
   "scripts": {
