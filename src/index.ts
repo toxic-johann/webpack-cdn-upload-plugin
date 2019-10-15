@@ -1,7 +1,6 @@
 const escapeStringRegexp = require('escape-string-regexp');
 import { isString, isFunction } from 'lodash';
 import * as nanoid from 'nanoid';
-import { compileFunction } from 'vm';
 const weblog = require('webpack-log');
 
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
