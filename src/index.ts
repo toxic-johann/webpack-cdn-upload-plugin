@@ -1,6 +1,7 @@
 const escapeStringRegexp = require('escape-string-regexp');
 import { isString, isFunction } from 'lodash';
 import * as nanoid from 'nanoid';
+import { compileFunction } from 'vm';
 const weblog = require('webpack-log');
 
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
@@ -64,20 +65,38 @@ class WebpackCdnUploadPlugin {
     if (this.replaceAsyncChunkName) {
       this.markChunkName(compilation);
 
-      const originGetPath = compilation.getPath;
+      const { getPath: originGetPath, emitAsset: originEmitAsset, updateAsset: originUpdateAsset, getAsset: originGetAsset } = compilation;
       const self = this;
 
-      Object.defineProperty(compilation, 'getPath', {
-        value(...args) {
-          const filenameTemplate: string = args.shift();
-          const filterFilenameTemplate = self.restoreChunkName(filenameTemplate);
-          args.unshift(filterFilenameTemplate);
-          return originGetPath.bind(this)(...args);
-        },
-        writable: true,
-        enumerable: false,
-        configurable: true,
-      });
+      const formatArgs = (...args) => {
+        const filenameTemplate: string = args.shift();
+        const filterFilenameTemplate = self.restoreChunkName(filenameTemplate);
+        args.unshift(filterFilenameTemplate);
+        return args;
+      };
+
+      compilation.getPath = function (...args) {
+        return originGetPath.bind(this)(...formatArgs(...args));
+      };
+
+      if (typeof originEmitAsset === 'function') {
+        compilation.emitAsset = function (...args) {
+          return originEmitAsset.bind(this)(...formatArgs(...args));
+        };
+      }
+
+      if (typeof originUpdateAsset === 'function') {
+        compilation.updateAsset = function (...args) {
+          return originUpdateAsset.bind(this)(...formatArgs(...args));
+        };
+      }
+
+      if (typeof originGetAsset === 'function') {
+        compilation.getAsset = function (...args) {
+          return originGetAsset.bind(this)(...formatArgs(...args));
+        };
+      }
+
     }
 
     if (this.replaceAssetsInHtml) {
@@ -197,7 +216,10 @@ class WebpackCdnUploadPlugin {
     }, {});
     chunkGroup.chunks.forEach(chunk => {
       const filename = chunk.files[0];
-      const chunkFile = compilation.assets[filename];
+      const chunkFile = typeof compilation.getAsset === 'function'
+        // @ts-ignore: it will be supported after webpack v4.40.0
+        ? compilation.getAsset(filename).source
+        : compilation.assets[filename];
       const originSource = chunkFile.source();
       const source = originSource
         // .replace(new RegExp(`src\\s?=(.*?)"${this.uniqueMark}(.*)${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
@@ -217,8 +239,12 @@ class WebpackCdnUploadPlugin {
   }
 
   async uploadChunk(chunk, compilation) {
-    for (const filename of chunk.files) {
-      const asset = compilation.assets[filename];
+    for (const originFilename of chunk.files) {
+      const filename = this.restoreChunkName(originFilename);
+      const asset = typeof compilation.getAsset === 'function'
+        // @ts-ignore: it will be supported after webpack v4.40.0
+        ? compilation.getAsset(filename).source
+        : compilation.assets[filename];
       let fileSource = asset.source();
       if (this.replaceUrlInCss && /.css$/.test(filename)) {
         const urls = fileSource.match(/url\((.*?)\)/g) || [];

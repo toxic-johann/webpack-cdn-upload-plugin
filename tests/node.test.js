@@ -8,8 +8,7 @@ const { JSDOM } = jsdom;
 const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
-
-const mfs = require('./helpers/mfs');
+const MemoryFileSystem = require('memory-fs');
 
 
 describe('as uglify need node setTimeout, we run it in node environment', () => {
@@ -52,7 +51,7 @@ describe('as uglify need node setTimeout, we run it in node environment', () => 
       expect(srcs.includes(CDN_PREFIX + 'chunk-1.js')).toBe(true);
       done();
     });
-    compiler.outputFileSystem = mfs;
+    compiler.outputFileSystem = new MemoryFileSystem();
   });
 
   test('support custom chunk file name with uglify plugin', done => {
@@ -93,6 +92,6 @@ describe('as uglify need node setTimeout, we run it in node environment', () => 
       expect(srcs.includes(CDN_PREFIX + 'chunk-3.js')).toBe(true);
       done();
     });
-    compiler.outputFileSystem = mfs;
+    compiler.outputFileSystem = new MemoryFileSystem();
   });
 });
