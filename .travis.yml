@@ -5,7 +5,10 @@ node_js:
     - '11'
     - '12'
 script:
-    - 'npm test'
+    - npm install webpack@4.39.0
+    - npm test
+    - npm install webpack@latest
+    - npm test
 after_success:
     - 'npm install coveralls && npm install nyc && ./node_modules/.bin/nyc report --temp-directory=coverage --reporter=text-lcov | ./node_modules/.bin/coveralls'
 notifications:
