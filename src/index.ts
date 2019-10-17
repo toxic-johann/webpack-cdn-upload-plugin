@@ -1,8 +1,9 @@
+/* eslint-disable no-loop-func  */
 const escapeStringRegexp = require('escape-string-regexp');
 import { isString, isFunction } from 'lodash';
 import * as nanoid from 'nanoid';
-const weblog = require('webpack-log');
 
+const weblog = require('webpack-log');
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
 const log = weblog({ name: PLUGIN_NAME });
 
@@ -56,8 +57,8 @@ class WebpackCdnUploadPlugin {
       log.error(message);
       throw new Error(message);
     }
-    compiler.hooks['compilation'].tap(PLUGIN_NAME, this.compilationFn.bind(this));
-    compiler.hooks['emit'].tap(PLUGIN_NAME, this.emitFn.bind(this));
+    compiler.hooks.compilation.tap(PLUGIN_NAME, this.compilationFn.bind(this));
+    compiler.hooks.emit.tap(PLUGIN_NAME, this.emitFn.bind(this));
   }
 
   compilationFn(compilation) {
@@ -172,7 +173,7 @@ class WebpackCdnUploadPlugin {
     const sortedChunkGroups = chunkGroups
       .sort((a, b) => b.getChildren().length - a.getChildren().length);
     while (sortedChunkGroups.length) {
-      for (let i = sortedChunkGroups.length - 1; i > -1;i--) {
+      for (let i = sortedChunkGroups.length - 1; i > -1; i--) {
         const chunkGroup = sortedChunkGroups[i];
 
         // only upload when its childChunk is uploaed
@@ -227,7 +228,7 @@ class WebpackCdnUploadPlugin {
         //   const newText = `src=(${JSON.stringify(asyncChunkMap)})[${chunkIdVariable}]`;
         //   return newText;
         // })
-        .replace(new RegExp(`[a-zA-Z_]+\.p\\s?\\+\\s?"${this.uniqueMark}"(.*?)"${this.uniqueMark}[^"]*"(.*?)"\\.js${this.uniqueMark}"`, 'g'), (text, $1, $2) => {
+        .replace(new RegExp(`[a-zA-Z_]+\.p\\s?\\+\\s?"${this.uniqueMark}"(.*?)"${this.uniqueMark}[^"]*"(.*?)"\\.js${this.uniqueMark}"`, 'g'), (text, $1) => {
           const chunkIdVariable = $1.replace(/\s|\+/g, '');
           return `(${JSON.stringify(asyncChunkMap)})[${chunkIdVariable}] || ${chunkIdVariable}`;
         });
@@ -286,7 +287,7 @@ class WebpackCdnUploadPlugin {
           : name;
     }
     this.chunksNameUrlMap[nameWithPublicPath] = url || nameWithPublicPath;
-    log.info(`"${name}" is uploaded and it will be as "${url || nameWithPublicPath }"`);
+    log.info(`"${name}" is uploaded and it will be as "${url || nameWithPublicPath}"`);
     return url;
   }
 }
