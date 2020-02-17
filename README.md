@@ -401,3 +401,8 @@ Build the file
 $ npm run build
 ```
 
+### Donation
+
+You can donation to us, that will help us keep moving.
+
+![image](https://user-images.githubusercontent.com/2577157/74649176-0a7db980-51ba-11ea-9db4-4dea2e72c6be.png)
