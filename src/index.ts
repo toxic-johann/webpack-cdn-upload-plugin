@@ -1,5 +1,6 @@
 /* eslint-disable no-loop-func  */
 const escapeStringRegexp = require('escape-string-regexp');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 import { isString, isFunction } from 'lodash';
 import * as nanoid from 'nanoid';
 
@@ -101,8 +102,11 @@ class WebpackCdnUploadPlugin {
 
     if (this.replaceAssetsInHtml) {
       /* istanbul ignore if  */
-      if (!compilation.hooks.htmlWebpackPluginAfterHtmlProcessing) {
-        const message = `We can't find compilation.hooks.htmlWebpackPluginAfterHtmlProcessing in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
+      const beforeEmit = compilation.hooks.htmlWebpackPluginAfterHtmlProcessing ||
+        HtmlWebpackPlugin.getHooks(compilation).beforeEmit;
+
+      if (!beforeEmit) {
+        const message = `We can't find compilation.hooks.htmlWebpackPluginAfterHtmlProcessing (beforeEmit hook) in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
         log.error(message);
         throw new Error(message);
       }
@@ -130,7 +134,7 @@ class WebpackCdnUploadPlugin {
         callback(null, htmlPluginData);
       };
 
-      compilation.hooks.htmlWebpackPluginAfterHtmlProcessing.tapAsync(PLUGIN_NAME, afterHtmlProcessFn);
+      beforeEmit.tapAsync(PLUGIN_NAME, afterHtmlProcessFn);
     }
   }
 

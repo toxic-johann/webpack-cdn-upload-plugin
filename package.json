@@ -61,7 +61,8 @@
     "webpack": "^4.41.2"
   },
   "peerDependencies": {
-    "webpack": "^4.41.2"
+    "webpack": "^4.41.2",
+    "html-webpack-plugin": ">=3.0.0"
   },
   "jest": {
     "modulePaths": [
