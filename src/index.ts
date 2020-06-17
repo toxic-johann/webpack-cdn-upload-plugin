@@ -57,8 +57,8 @@ class WebpackCdnUploadPlugin {
       log.error(message);
       throw new Error(message);
     }
-    compiler.hooks.compilation.tap(PLUGIN_NAME, (compilation) => {
-      this.compilationFn.apply(this, [compilation, compiler]);
+    compiler.hooks.compilation.tap(PLUGIN_NAME, (...args) => {
+      this.compilationFn.call(this, ...args, compiler);
     });
     compiler.hooks.emit.tap(PLUGIN_NAME, this.emitFn.bind(this));
   }
