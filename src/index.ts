@@ -102,15 +102,16 @@ class WebpackCdnUploadPlugin {
     }
 
     if (this.replaceAssetsInHtml) {
-      /* istanbul ignore if  */
-      let beforeEmit = compilation.hooks.htmlWebpackPluginAfterHtmlProcessing;
+      let beforeEmit;
+      const beforeEmitHookOnHtmlWebpackPluginBeforeV4 = compilation.hooks.htmlWebpackPluginAfterHtmlProcessing;
 
-      if (!beforeEmit) {
+      if (!beforeEmitHookOnHtmlWebpackPluginBeforeV4) {
         const [HtmlWebpackPlugin] = compiler.options.plugins.filter((plugin) => plugin.constructor.name === 'HtmlWebpackPlugin');
         beforeEmit = HtmlWebpackPlugin.constructor.getHooks(compilation).beforeEmit;
+      } else {
+        beforeEmit = beforeEmitHookOnHtmlWebpackPluginBeforeV4;
       }
-
-
+      /* istanbul ignore if  */
       if (!beforeEmit) {
         const message = `We can't find compilation.hooks.htmlWebpackPluginAfterHtmlProcessing (beforeEmit hook) in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
         log.error(message);
