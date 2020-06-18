@@ -1,9 +1,10 @@
 language: node_js
 node_js:
-    - '9'
     - '10'
     - '11'
     - '12'
+    - '13'
+    - '14'
 script:
     - npm install webpack@4.39.0
     - npm test
