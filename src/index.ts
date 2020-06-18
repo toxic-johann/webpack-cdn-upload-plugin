@@ -1,7 +1,7 @@
 /* eslint-disable no-loop-func  */
 const escapeStringRegexp = require('escape-string-regexp');
 import { isString, isFunction } from 'lodash';
-import * as nanoid from 'nanoid';
+import { nanoid } from 'nanoid';
 
 const weblog = require('webpack-log');
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
