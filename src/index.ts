@@ -58,12 +58,12 @@ class WebpackCdnUploadPlugin {
       throw new Error(message);
     }
     compiler.hooks.compilation.tap(PLUGIN_NAME, (...args) => {
-      this.compilationFn.call(this, ...args, compiler);
+      this.compilationFn.call(this, compiler, ...args);
     });
     compiler.hooks.emit.tap(PLUGIN_NAME, this.emitFn.bind(this));
   }
 
-  compilationFn(compilation, compiler) {
+  compilationFn(compiler, compilation) {
     if (this.replaceAsyncChunkName) {
       this.markChunkName(compilation);
 
