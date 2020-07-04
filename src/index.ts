@@ -134,17 +134,19 @@ class WebpackCdnUploadPlugin {
         let { html } = htmlPluginData;
         for (const rawFileName of files) {
           const nameWithPublicPath = this.originPublicPath + rawFileName;
-          if (html.indexOf(`"${nameWithPublicPath}`) > -1) {
+          const nameWithPublicPathRegExp = new RegExp(`${escapeStringRegexp(this.originPublicPath)}((${this.uniqueMark})+.+${this.uniqueMark})?${escapeStringRegexp(rawFileName)}((${this.uniqueMark})+)?`);
+          const match = html.match(nameWithPublicPathRegExp);
+          if (match) {
             const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
             /* istanbul ignore if  */
             if (uploadedUrl) {
-              html = replaceFile(html, `"${nameWithPublicPath}`, `"${uploadedUrl}`);
+              html = replaceFile(html, `"${match[0]}`, `"${uploadedUrl}`);
               continue;
             }
 
             const url = await this.uploadFile(html, rawFileName);
             if (url && isString(url)) {
-              html = replaceFile(html, `"${nameWithPublicPath}`, `"${url}`);
+              html = replaceFile(html, `"${match[0]}`, `"${url}`);
             }
           }
         }

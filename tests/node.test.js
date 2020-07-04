@@ -9,6 +9,8 @@ const path = require('path');
 const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'http://cdn.toxicjohann.com/';
 const MemoryFileSystem = require('memory-fs');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const PreloadWebpackPlugin = require('preload-webpack-plugin');
 
 
 describe('as uglify need node setTimeout, we run it in node environment', () => {
@@ -94,4 +96,34 @@ describe('as uglify need node setTimeout, we run it in node environment', () => 
     });
     compiler.outputFileSystem = new MemoryFileSystem();
   });
+});
+
+test('support preload webpack plugin', done => {
+  const compiler = webpack({
+    entry: path.join(__dirname, 'fixtures', '/preload/index.js'),
+    output: {
+      path: OUTPUT_DIR,
+      filename: '[name].js',
+      chunkFilename: '[name].js',
+      publicPath: '/public/',
+    },
+    plugins: [
+      new HtmlWebpackPlugin(),
+      new PreloadWebpackPlugin(),
+      new WebpackCdnUploadPlugin({
+        upload(content, name) {
+          return CDN_PREFIX + name;
+        },
+        replaceAsyncChunkName: true,
+        replaceAssetsInHtml: true,
+      }),
+    ],
+  }, function(error, result) {
+    expect(error).toBeFalsy();
+    expect(result.compilation.errors.length).toBe(0);
+    const html = result.compilation.assets['index.html'].source();
+    expect(html.indexOf('http://cdn.toxicjohann.com/1.js') > -1).toBe(true);
+    done();
+  });
+  compiler.outputFileSystem = new MemoryFileSystem();
 });

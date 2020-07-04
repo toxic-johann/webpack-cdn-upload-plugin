@@ -510,36 +510,6 @@ describe('base behavior test', () => {
     compiler.outputFileSystem = new MemoryFileSystem();
   });
 
-  // test('support preload webpack plugin', done => {
-  //   const compiler = webpack({
-  //     entry: path.join(__dirname, 'fixtures', '/preload/index.js'),
-  //     output: {
-  //       path: OUTPUT_DIR,
-  //       filename: '[name].js',
-  //       chunkFilename: '[name].js',
-  //       publicPath: '/public/',
-  //     },
-  //     plugins: [
-  //       new WebpackCdnUploadPlugin({
-  //         upload(content, name) {
-  //           return CDN_PREFIX + name;
-  //         },
-  //         replaceAsyncChunkName: true,
-  //         replaceAssetsInHtml: true,
-  //       }),
-  //       new UglifyJsPlugin(),
-  //       new HtmlWebpackPlugin(),
-  //       new PreloadWebpackPlugin(),
-  //     ],
-  //   }, function(error, result) {
-  //     expect(error).toBeFalsy();
-  //     expect(result.compilation.errors.length).toBe(0);
-  //     const html = result.compilation.assets['index.html'].source();
-  //     expect(html.indexOf('http://cdn.toxicjohann.com/0.js') > -1).toBe(true);
-  //     done();
-  //   });
-  //   compiler.outputFileSystem = new MemoryFileSystem();
-  // });
 
   test('support replacement on single html-webpack-plugin file with img in html', done => {
     const compiler = webpack({
