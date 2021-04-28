@@ -1,13 +1,13 @@
 /* eslint-disable no-loop-func, no-await-in-loop, no-continue, no-param-reassign, no-restricted-syntax, no-shadow, max-len, no-plusplus, no-nested-ternary, func-names  */
 import { isString, isFunction } from 'lodash';
 import { nanoid } from 'nanoid';
-
-const escapeStringRegexp = require('escape-string-regexp');
-
-const weblog = require('webpack-log');
+import { Compiler, Compilation, Chunk } from 'webpack';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import weblog from 'webpack-log';
 
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
-const log = weblog({ name: PLUGIN_NAME });
+const log = weblog({ name: PLUGIN_NAME, level: process.env.DEBUG ? 'debug' : 'warn' });
+const escapeStringRegexp = (value: string) => value.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&').replace(/-/g, '\\x2d');
 
 function replaceFile(file: string, source: string, target: string) {
   return file.replace(new RegExp(escapeStringRegexp(source), 'g'), target);
@@ -42,14 +42,11 @@ class WebpackCdnUploadPlugin {
   originPublicPath: string;
 
   constructor(options: Options = {}) {
-    const {
-      upload,
-      replaceAsyncChunkName = false,
-      replaceUrlInCss = true,
-      replaceAssetsInHtml = false,
-    } = options;
+    const { upload, replaceAsyncChunkName = false, replaceUrlInCss = true, replaceAssetsInHtml = false } = options;
     if (!isFunction(upload)) {
-      log.warn(`You have not provide an upload function. If you need to upload assets to cdn, please provide an upload function or you can remove ${PLUGIN_NAME}.`);
+      log.warn(
+        `You have not provide an upload function. If you need to upload assets to cdn, please provide an upload function or you can remove ${PLUGIN_NAME}.`,
+      );
     }
     this.upload = upload;
     this.replaceAsyncChunkName = replaceAsyncChunkName;
@@ -61,29 +58,35 @@ class WebpackCdnUploadPlugin {
     this.chunksNameUrlMap = {};
   }
 
-  apply(compiler) {
+  apply(compiler: Compiler) {
     /* istanbul ignore if  */
     if (!compiler.hooks) {
       const message = `The webpack you used do not support compiler hooks. Please install ${PLUGIN_NAME}@0`;
       log.error(message);
       throw new Error(message);
     }
+    compiler.hooks.afterPlugins.tap(PLUGIN_NAME, (compiler) => {
+      if (this.replaceAsyncChunkName) {
+        this.markChunkName(compiler);
+      }
+    });
     compiler.hooks.compilation.tap(PLUGIN_NAME, (...args) => {
       this.compilationFn.call(this, compiler, ...args);
     });
     compiler.hooks.emit.tap(PLUGIN_NAME, this.emitFn.bind(this));
   }
 
-  compilationFn(compiler, compilation) {
+  compilationFn(_: Compiler, compilation: Compilation) {
     if (this.replaceAsyncChunkName) {
-      this.markChunkName(compilation);
-
       const {
-        getPath: originGetPath, emitAsset: originEmitAsset, updateAsset: originUpdateAsset, getAsset: originGetAsset,
+        getPath: originGetPath,
+        emitAsset: originEmitAsset,
+        updateAsset: originUpdateAsset,
+        getAsset: originGetAsset,
       } = compilation;
       const self = this;
 
-      const formatArgs = (...args) => {
+      const formatArgs = (...args: any) => {
         const filenameTemplate: string = args.shift();
         const filterFilenameTemplate = self.restoreChunkName(filenameTemplate);
         args.unshift(filterFilenameTemplate);
@@ -114,18 +117,10 @@ class WebpackCdnUploadPlugin {
     }
 
     if (this.replaceAssetsInHtml) {
-      let beforeEmit;
-      const beforeEmitHookOnHtmlWebpackPluginBeforeV4 = compilation.hooks.htmlWebpackPluginAfterHtmlProcessing;
-
-      if (!beforeEmitHookOnHtmlWebpackPluginBeforeV4) {
-        const [HtmlWebpackPlugin] = compiler.options.plugins.filter((plugin) => plugin.constructor.name === 'HtmlWebpackPlugin');
-        beforeEmit = HtmlWebpackPlugin.constructor.getHooks(compilation).beforeEmit;
-      } else {
-        beforeEmit = beforeEmitHookOnHtmlWebpackPluginBeforeV4;
-      }
+      const beforeEmit = HtmlWebpackPlugin.getHooks(compilation).beforeEmit;
       /* istanbul ignore if  */
       if (!beforeEmit) {
-        const message = `We can't find compilation.hooks.htmlWebpackPluginAfterHtmlProcessing (beforeEmit hook) in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
+        const message = `We can't find HtmlWebpackPlugin.getHooks(compilation).beforeEmit (beforeEmit hook) in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
         log.error(message);
         throw new Error(message);
       }
@@ -134,7 +129,11 @@ class WebpackCdnUploadPlugin {
         let { html } = htmlPluginData;
         for (const rawFileName of files) {
           const nameWithPublicPath = this.originPublicPath + rawFileName;
-          const nameWithPublicPathRegExp = new RegExp(`${escapeStringRegexp(this.originPublicPath)}((${this.uniqueMark})+.+${this.uniqueMark})?${escapeStringRegexp(rawFileName)}((${this.uniqueMark})+)?`);
+          const nameWithPublicPathRegExp = new RegExp(
+            `${escapeStringRegexp(this.originPublicPath)}((${this.uniqueMark})+.+${
+              this.uniqueMark
+            })?${escapeStringRegexp(rawFileName)}((${this.uniqueMark})+)?`,
+          );
           const match = html.match(nameWithPublicPathRegExp);
           if (match) {
             const uploadedUrl = this.chunksNameUrlMap[nameWithPublicPath];
@@ -159,50 +158,55 @@ class WebpackCdnUploadPlugin {
     }
   }
 
-  async emitFn(compilation) {
+  async emitFn(compilation: Compilation) {
     if (isFunction(this.upload)) {
       await this.uploadAssets(compilation);
     }
   }
 
-  markChunkName(compilation) {
+  markChunkName(compiler: Compiler) {
     // if we need to replace async chunk name
     // we will set a mark on its parent chunk source
     const {
       chunkFilename: originChunkFilename,
       // publicPath has not default value in webpack4
       publicPath: originPublicPath = '',
-    } = compilation.outputOptions;
-    this.originChunkFilename = originChunkFilename;
-    this.originPublicPath = originPublicPath;
-    let chunkFileName = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
-    compilation.outputOptions.chunkFilename = chunkFileName;
-    Object.defineProperty(compilation.outputOptions, 'chunkFilename', {
+    } = compiler.options.output;
+    this.originChunkFilename = originChunkFilename as string;
+    this.originPublicPath = originPublicPath as string;
+    let chunkFilename = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}`;
+    // let chunkFilename = `[id].js`;
+    compiler.options.output.chunkFilename = chunkFilename;
+    Object.defineProperty(compiler.options.output, 'chunkFilename', {
       get() {
-        return chunkFileName;
+        return chunkFilename;
       },
       set(value) {
         // tslint:disable-next-line
         // console.warn(`chunkFileName is set as ${chunkFileName} by webpack-upload-cdn-plugin, you can't change it to ${value}`);
-        chunkFileName = value;
-        return chunkFileName;
+        chunkFilename = value;
+        return chunkFilename;
       },
       configurable: true,
       enumerable: true,
     });
   }
 
-  async uploadAssets(compilation) {
+  async uploadAssets(compilation: Compilation) {
     const { chunkGroups } = compilation;
 
-    const sortedChunkGroups = chunkGroups
-      .sort((a, b) => b.getChildren().length - a.getChildren().length);
+    const sortedChunkGroups = chunkGroups.sort((a, b) => b.getChildren().length - a.getChildren().length);
     while (sortedChunkGroups.length) {
       for (let i = sortedChunkGroups.length - 1; i > -1; i--) {
         const chunkGroup = sortedChunkGroups[i];
 
         // only upload when its childChunk is uploaed
-        const uploadAble = chunkGroup.getChildren().reduce((uploadAble, childChunkGroup) => uploadAble && sortedChunkGroups.indexOf(childChunkGroup) === -1, true);
+        const uploadAble = chunkGroup
+          .getChildren()
+          .reduce(
+            (uploadAble, childChunkGroup) => uploadAble && sortedChunkGroups.indexOf(childChunkGroup) === -1,
+            true,
+          );
         /* istanbul ignore if  */
         if (!uploadAble) continue;
 
@@ -227,42 +231,43 @@ class WebpackCdnUploadPlugin {
 
   // if a file has async chunk
   // we need to change its async chunk name before upload
-  replaceAsyncChunkMapOfChunk(chunkGroup, compilation) {
+  replaceAsyncChunkMapOfChunk(chunkGroup: Compilation['chunkGroups'][0], compilation: Compilation) {
     const childrenChunkGroups = chunkGroup.getChildren();
     const asyncChunkMap = childrenChunkGroups.reduce((map, chunkGroup) => {
       chunkGroup.chunks.forEach(({ id }) => {
         /* istanbul ignore if */
         if (!this.chunksIdUrlMap[id]) {
-          throw new Error(`We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`);
+          throw new Error(
+            `We can't find the upload url of chunk ${id}. Please make sure it's uploaded before uploading it's parent chunk`,
+          );
         }
         map[id] = this.chunksIdUrlMap[id];
       });
       return map;
     }, {});
     chunkGroup.chunks.forEach((chunk) => {
-      const filename = chunk.files[0];
-      const chunkFile = typeof compilation.getAsset === 'function'
-        // @ts-ignore: it will be supported after webpack v4.40.0
-        ? compilation.getAsset(filename).source
-        : compilation.assets[filename];
-      const originSource = chunkFile.source();
-      const source = originSource
-        .replace(new RegExp(`[a-zA-Z_]+.p\\s?\\+\\s?"${this.uniqueMark}"(.*?)"${this.uniqueMark}[^"]*"(.*?)"\\.js${this.uniqueMark}"`, 'g'), (text, $1) => {
+      const filename = (chunk.files instanceof Set ? Array.from(chunk.files) : chunk.files)[0];
+      const chunkFile = compilation.getAsset(filename).source;
+      const originSource = chunkFile.source() as string;
+      const source = originSource.replace(
+        new RegExp(
+          `[a-zA-Z_]+.p\\s?\\+\\s?"${this.uniqueMark}"(.*?)"${this.uniqueMark}[^"]*"(.*?)"\\.js${this.uniqueMark}"`,
+          'g',
+        ),
+        (_, $1) => {
           const chunkIdVariable = $1.replace(/\s|\+/g, '');
           return `(${JSON.stringify(asyncChunkMap)})[${chunkIdVariable}] || ${chunkIdVariable}`;
-        });
+        },
+      );
       chunkFile.source = () => source;
     });
   }
 
-  async uploadChunk(chunk, compilation) {
+  async uploadChunk(chunk: Chunk, compilation: Compilation) {
     for (const originFilename of chunk.files) {
       const filename = this.restoreChunkName(originFilename);
-      const asset = typeof compilation.getAsset === 'function'
-        // @ts-ignore: it will be supported after webpack v4.40.0
-        ? compilation.getAsset(filename).source
-        : compilation.assets[filename];
-      let fileSource = asset.source();
+      const asset = compilation.getAsset(filename).source;
+      let fileSource = asset.source() as string;
       if (this.replaceUrlInCss && /.css$/.test(filename)) {
         const urls = fileSource.match(/url\((.*?)\)/g) || [];
         for (const urlStr of urls) {
@@ -281,7 +286,7 @@ class WebpackCdnUploadPlugin {
           /* istanbul ignore if  */
           if (!rawSource) continue;
 
-          const source = rawSource.source();
+          const source = rawSource.source() as string;
           const url = await this.uploadFile(source, rawPath);
           if (url && isString(url)) {
             fileSource = replaceFile(fileSource, `(${nameWithPublicPath}`, `(${url}`);
@@ -293,15 +298,12 @@ class WebpackCdnUploadPlugin {
     }
   }
 
-  async uploadFile(source: string, name: string, chunk?) {
+  async uploadFile(source: string, name: string, chunk?: Chunk) {
     const url = await this.upload(source, name, chunk);
     const nameWithPublicPath = (this.originPublicPath || '') + name;
     if (chunk) {
-      this.chunksIdUrlMap[chunk.id] = url && isString(url)
-        ? url
-        : this.replaceAsyncChunkName
-          ? nameWithPublicPath
-          : name;
+      this.chunksIdUrlMap[chunk.id] =
+        url && isString(url) ? url : this.replaceAsyncChunkName ? nameWithPublicPath : name;
     }
     this.chunksNameUrlMap[nameWithPublicPath] = url || nameWithPublicPath;
     log.info(`"${name}" is uploaded and it will be as "${url || nameWithPublicPath}"`);
@@ -309,4 +311,4 @@ class WebpackCdnUploadPlugin {
   }
 }
 
-module.exports = WebpackCdnUploadPlugin;
+export { WebpackCdnUploadPlugin };
