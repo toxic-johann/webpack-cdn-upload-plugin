@@ -3,7 +3,6 @@ const webpack = require('webpack');
 const MemoryFileSystem = require('memory-fs');
 
 const WebpackCdnUploadPlugin = require('./lib/index').WebpackCdnUploadPlugin;
-const { log } = require('console');
 
 const OUTPUT_DIR = path.join(__dirname, 'dist');
 const CDN_PREFIX = 'cdn.com/'
@@ -14,14 +13,13 @@ const fs = new MemoryFileSystem();
   await new Promise((resolve, reject) => {
     const compiler = webpack(
       {
-        mode: 'development',
+        mode: 'production',
         entry: {
           file: path.join(__dirname, 'tests/fixtures', 'file.js'),
         },
         output: {
           path: OUTPUT_DIR,
           filename: '[name].js',
-          chunkFilename: '[contenthash:8].js',
           publicPath: '',
         },
         plugins: [
