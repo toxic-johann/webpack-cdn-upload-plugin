@@ -136,7 +136,7 @@ class WebpackCdnUploadPlugin {
     } = compiler.options.output;
     this.originChunkFilename = originChunkFilename as string;
     this.originPublicPath = originPublicPath as string;
-    compiler.options.output.chunkFilename = `${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
+    compiler.options.output.chunkFilename = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
   }
 
   async uploadAssets(compilation: Compilation) {
@@ -148,14 +148,14 @@ class WebpackCdnUploadPlugin {
     if (this.replaceAsyncChunkName) {
       for (const entry of entrypoints.values()) {
         for (const chunk of chunks) {
-          if (chunk.id === entry.id) {
+          if (chunk.id.toString() === entry.id.toString()) {
             const filename = Array.from(chunk.files)[0];
             const chunkFile = compilation.getAsset(filename).source;
             const original = chunkFile.source() as string;
             const source = original.replace(
-              new RegExp(String.raw`return "${this.uniqueMark}.*${this.uniqueMark}";`, 'g'),
-              (_) => {
-                return `return (${JSON.stringify(this.chunksIdUrlMap)})[arguments[0]]`;
+              new RegExp(String.raw`"${this.uniqueMark}" ?\+ ?(\S+?) ?\+ ?"${this.uniqueMark}.*${this.uniqueMark}"([,;])`, 'g'),
+              (_, $1, $2) => {
+                return `(${JSON.stringify(this.chunksIdUrlMap)})[${$1}]${$2}`;
               },
             );
             chunkFile.buffer = () => {
