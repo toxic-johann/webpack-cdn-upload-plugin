@@ -6,11 +6,12 @@
     ],
     "outDir": "lib",
     "rootDir": "src",
-    "module": "commonjs",
+    "module": "es6",
     "target": "es2019",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "sourceMap": true,
+    "declaration": true,
     "typeRoots": [
       "node_modules/@types"
     ]
