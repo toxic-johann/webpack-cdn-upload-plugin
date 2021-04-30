@@ -2,7 +2,6 @@
 import { isString, isFunction } from 'lodash';
 import { nanoid } from 'nanoid';
 import { Compiler, Compilation, Chunk } from 'webpack';
-import { CachedSource } from 'webpack-sources';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import weblog from 'webpack-log';
 
@@ -15,16 +14,14 @@ function replaceFile(file: string, source: string, target: string) {
 }
 
 interface Options {
-  upload?: Function;
+  upload?: (content: string, name: string, chunk: Chunk) => Promise<string>;
   replaceAsyncChunkName?: boolean;
   replaceUrlInCss?: boolean;
   replaceAssetsInHtml?: boolean;
 }
 
 class WebpackCdnUploadPlugin {
-  rename: Function | undefined | string;
-
-  upload: Function;
+  upload: (content: string, name: string, chunk: Chunk) => Promise<string>;
 
   replaceAsyncChunkName: boolean;
 
@@ -41,6 +38,8 @@ class WebpackCdnUploadPlugin {
   originChunkFilename: string;
 
   originPublicPath: string;
+
+  entryNames: string[];
 
   constructor(options: Options = {}) {
     const { upload, replaceAsyncChunkName = false, replaceUrlInCss = true, replaceAssetsInHtml = false } = options;
@@ -59,7 +58,7 @@ class WebpackCdnUploadPlugin {
     this.chunksNameUrlMap = {};
   }
 
-  apply(compiler: Compiler) {
+  apply(compiler: Compiler): void {
     /* istanbul ignore if  */
     if (!compiler.hooks) {
       const message = `The webpack you used do not support compiler hooks. Please install ${PLUGIN_NAME}@0`;
@@ -74,12 +73,78 @@ class WebpackCdnUploadPlugin {
     compiler.hooks.compilation.tap(PLUGIN_NAME, (...args) => {
       this.compilationFn.call(this, compiler, ...args);
     });
-    compiler.hooks.emit.tap(PLUGIN_NAME, this.emitFn.bind(this));
   }
 
-  compilationFn(_: Compiler, compilation: Compilation) {
+  compilationFn(_: Compiler, compilation: Compilation): void {
+    compilation.hooks.processAssets.tapPromise(
+      { name: PLUGIN_NAME, stage: Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE },
+      async (assets) => {
+        const sortedChunks = Array.from(compilation.chunks).sort((a) => {
+          if (a.canBeInitial()) {
+            return 1;
+          }
+          return -1;
+        });
+        for (const chunk of sortedChunks) {
+          for (const filename of chunk.files) {
+            if (!assets[filename]) {
+              continue;
+            }
+            const originalSource = assets[filename].source() as string;
+            if (this.replaceUrlInCss && /.css$/.test(filename)) {
+              const matches = originalSource.matchAll(/url\((.*?)\)/g);
+              let replacedSource: string = originalSource;
+              for (const match of matches) {
+                const rawPath = match[1].replace(new RegExp(this.originPublicPath), '');
+                let uploadedUrl = this.chunksNameUrlMap[match[1]];
+                if (!uploadedUrl) {
+                  const resourceData = compilation.assets[rawPath];
+                  if (!resourceData) {
+                    continue;
+                  }
+                  uploadedUrl = await this.uploadFile(resourceData.source() as string, rawPath);
+                }
+                if (uploadedUrl && isString(uploadedUrl)) {
+                  replacedSource = replaceFile(replacedSource, `(${match[1]}`, `(${uploadedUrl}`);
+                }
+              }
+              assets[filename].source = () => {
+                return replacedSource;
+              };
+              assets[filename].buffer = () => {
+                return Buffer.from(replacedSource);
+              };
+              continue;
+            }
+            if (chunk.canBeInitial()) {
+              const source = originalSource.replace(
+                new RegExp(
+                  String.raw`"${this.uniqueMark}" ?\+ ?(\S+?) ?\+ ?"${this.uniqueMark}.*${this.uniqueMark}"`,
+                  'g',
+                ),
+                (_, $1) => {
+                  return `(${JSON.stringify(this.chunksIdUrlMap)})[${$1}]`;
+                },
+              );
+              assets[filename].source = () => {
+                return source;
+              };
+              assets[filename].buffer = () => {
+                return Buffer.from(source);
+              };
+            }
+            await this.uploadFile(originalSource, this.restoreChunkName(filename), chunk);
+          }
+        }
+        Object.keys(assets).forEach((filename) => {
+          if (this.restoreChunkName(filename) !== filename) {
+            compilation.renameAsset(filename, this.restoreChunkName(filename));
+          }
+        });
+      },
+    );
     if (this.replaceAssetsInHtml) {
-      const beforeEmit = HtmlWebpackPlugin.getHooks(compilation).beforeEmit;
+      const { beforeEmit } = HtmlWebpackPlugin.getHooks(compilation);
       /* istanbul ignore if  */
       if (!beforeEmit) {
         const message = `We can't find HtmlWebpackPlugin.getHooks(compilation).beforeEmit (beforeEmit hook) in this webpack. If you do not use html-webpack-plugin, please set replaceAssetsInHtml as false. If you use html-webpack-plugin, please use it before ${PLUGIN_NAME}`;
@@ -120,13 +185,7 @@ class WebpackCdnUploadPlugin {
     }
   }
 
-  async emitFn(compilation: Compilation) {
-    if (isFunction(this.upload)) {
-      await this.uploadAssets(compilation);
-    }
-  }
-
-  markChunkName(compiler: Compiler) {
+  markChunkName(compiler: Compiler): void {
     // if we need to replace async chunk name
     // we will set a mark on its parent chunk source
     const {
@@ -139,39 +198,14 @@ class WebpackCdnUploadPlugin {
     compiler.options.output.chunkFilename = `${this.uniqueMark}[id]${this.uniqueMark}${originChunkFilename}${this.uniqueMark}`;
   }
 
-  async uploadAssets(compilation: Compilation) {
-    const { chunks, entrypoints } = compilation;
-
-    for (const chunk of chunks) {
-      await this.uploadChunk(chunk, compilation);
-    }
-    if (this.replaceAsyncChunkName) {
-      for (const entry of entrypoints.values()) {
-        for (const chunk of chunks) {
-          if (chunk.id.toString() === entry.id.toString()) {
-            const filename = Array.from(chunk.files)[0];
-            const chunkFile = compilation.getAsset(filename).source;
-            const original = chunkFile.source() as string;
-            const source = original.replace(
-              new RegExp(String.raw`"${this.uniqueMark}" ?\+ ?(\S+?) ?\+ ?"${this.uniqueMark}.*${this.uniqueMark}"([,;])`, 'g'),
-              (_, $1, $2) => {
-                return `(${JSON.stringify(this.chunksIdUrlMap)})[${$1}]${$2}`;
-              },
-            );
-            chunkFile.buffer = () => {
-              return Buffer.from(source);
-            }
-            break;
-          }
-        }
-      }
-    }
+  restoreChunkName(name: string): string {
+    return name
+      .replace(new RegExp(`${this.uniqueMark}(.*?)${this.uniqueMark}`, 'g'), '')
+      .replace(new RegExp(this.uniqueMark, 'g'), '');
   }
 
-  async uploadChunk(chunk: Chunk, compilation: Compilation) {
-    // for (const originFilename of chunk.files) {
+  async uploadChunk(chunk: Chunk, compilation: Compilation): Promise<void> {
     for (const filename of chunk.files) {
-      // const filename = this.restoreChunkName(originFilename);
       const asset = compilation.getAsset(filename).source;
       let fileSource = asset.source() as string;
       if (this.replaceUrlInCss && /.css$/.test(filename)) {
@@ -200,11 +234,11 @@ class WebpackCdnUploadPlugin {
           }
         }
       }
-      await this.uploadFile(fileSource, filename, chunk);
+      await this.uploadFile(fileSource, this.restoreChunkName(filename), chunk);
     }
   }
 
-  async uploadFile(source: string, name: string, chunk?: Chunk) {
+  async uploadFile(source: string, name: string, chunk?: Chunk): Promise<string> {
     const url = await this.upload(source, name, chunk);
     const nameWithPublicPath = (this.originPublicPath || '') + name;
     if (chunk) {
@@ -217,4 +251,4 @@ class WebpackCdnUploadPlugin {
   }
 }
 
-export { WebpackCdnUploadPlugin };
+export default WebpackCdnUploadPlugin;

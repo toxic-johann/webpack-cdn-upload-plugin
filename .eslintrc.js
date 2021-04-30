@@ -23,7 +23,7 @@ module.exports = {
     'valid-jsdoc': 'off',
     'no-eval': 'off',
     'import/extensions': [
-      ERROR,
+      0,
       'ignorePackages',
       {
         ts: 'never',
