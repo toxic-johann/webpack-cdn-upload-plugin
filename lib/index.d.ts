@@ -1,14 +1,10 @@
+/// <reference types="node" />
 import { Compiler, Compilation, Chunk } from 'webpack';
 interface Options {
-    upload?: (content: string, name: string, chunk: Chunk) => Promise<string>;
-    replaceAsyncChunkName?: boolean;
-    replaceUrlInCss?: boolean;
-    replaceAssetsInHtml?: boolean;
+    upload?: (content: string | Buffer, name: string, chunk: Chunk) => Promise<string>;
 }
 declare class WebpackCdnUploadPlugin {
-    upload: (content: string, name: string, chunk: Chunk) => Promise<string>;
-    replaceAsyncChunkName: boolean;
-    replaceUrlInCss: boolean;
+    upload: (content: string | Buffer, name: string, chunk: Chunk) => Promise<string>;
     replaceAssetsInHtml: boolean;
     uniqueMark: string;
     chunksIdUrlMap: {
@@ -23,8 +19,7 @@ declare class WebpackCdnUploadPlugin {
     constructor(options?: Options);
     apply(compiler: Compiler): void;
     compilationFn(_: Compiler, compilation: Compilation): void;
-    markChunkName(compiler: Compiler): void;
     restoreChunkName(name: string): string;
-    uploadFile(source: string, name: string, chunk?: Chunk): Promise<string>;
+    uploadFile(source: string | Buffer, name: string, chunk?: Chunk): Promise<string>;
 }
-export default WebpackCdnUploadPlugin;
+export = WebpackCdnUploadPlugin;

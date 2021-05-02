@@ -85,7 +85,7 @@ describe('base behavior test', () => {
     });
   });
 
-  test('replace url for async chunk', (done) => {
+  test('replace url for async chunk in development mode', (done) => {
     const fs = new MemoryFileSystem();
     const compiler = webpack({
       mode: 'development',
@@ -102,7 +102,6 @@ describe('base behavior test', () => {
           upload: async (_, name) => {
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
         }),
       ],
     });
@@ -120,7 +119,48 @@ describe('base behavior test', () => {
     });
   });
 
-  test('replace url for multiple chunk', (done) => {
+  test('replace url for async chunk in production mode', (done) => {
+    const fs = new MemoryFileSystem();
+    const compiler = webpack({
+      mode: 'production',
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        chunkFilename: '[id].js',
+        publicPath: '',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload: async (_, name) => {
+            return CDN_PREFIX + name;
+          },
+        }),
+      ],
+      optimization: {
+        chunkIds: 'named',
+        splitChunks: {
+          chunks: 'all',
+        },
+      },
+    });
+    compiler.outputFileSystem = fs;
+    compiler.run((error, result) => {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const fileNames = Object.keys(result.compilation.assets);
+      expect(fileNames.includes('tests_fixtures_module-a_js.js')).toBe(true);
+      eval(fs.readFileSync(path.join(__dirname, 'dist/file.js'), 'utf8'));
+      const scripts = document.head.getElementsByTagName('script');
+      expect(scripts.length).toBe(1);
+      expect(scripts[0].src).toBe(`${CDN_PREFIX}tests_fixtures_module-a_js.js`);
+      done();
+    });
+  });
+
+  test('replace url for multiple chunk in development mode', (done) => {
     const fs = new MemoryFileSystem();
     const compiler = webpack({
       mode: 'development',
@@ -137,9 +177,61 @@ describe('base behavior test', () => {
           upload: async (_, name) => {
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
         }),
       ],
+      optimization: {
+        chunkIds: 'named',
+        splitChunks: {
+          chunks: 'all',
+        },
+      },
+    });
+    compiler.outputFileSystem = fs;
+    compiler.run((error, result) => {
+      expect(error).toBeFalsy();
+      expect(result.compilation.errors.length).toBe(0);
+      const fileNames = Object.keys(result.compilation.assets);
+      expect(fileNames.includes('tests_fixtures_file_js.js')).toBe(true);
+      expect(fileNames.includes('tests_fixtures_home_js.js')).toBe(true);
+      expect(fileNames.includes('tests_fixtures_module-a_js.js')).toBe(true);
+      expect(fileNames.includes('vendor.js')).toBe(true);
+      expect(fileNames.includes('file.js')).toBe(true);
+      eval(fs.readFileSync(path.join(__dirname, 'dist/file.js'), 'utf8'));
+      const scripts = Array.from(document.head.getElementsByTagName('script'));
+      expect(scripts.length).toBe(3);
+      const srcs = scripts.map(({ src }) => src);
+      expect(srcs.includes(`${CDN_PREFIX}tests_fixtures_file_js.js`)).toBe(true);
+      expect(srcs.includes(`${CDN_PREFIX}tests_fixtures_home_js.js`)).toBe(true);
+      expect(srcs.includes(`${CDN_PREFIX}vendor.js`)).toBe(true);
+      done();
+    });
+  });
+
+  test('replace url for multiple chunk in production mode', (done) => {
+    const fs = new MemoryFileSystem();
+    const compiler = webpack({
+      mode: 'production',
+      entry: {
+        file: path.join(__dirname, 'fixtures', 'file-a.js'),
+      },
+      output: {
+        path: OUTPUT_DIR,
+        filename: '[name].js',
+        publicPath: '',
+      },
+      plugins: [
+        new WebpackCdnUploadPlugin({
+          upload: async (_, name) => {
+            return CDN_PREFIX + name;
+          },
+        }),
+      ],
+      optimization: {
+        chunkIds: 'named',
+        splitChunks: {
+          chunks: 'all',
+        },
+      },
     });
     compiler.outputFileSystem = fs;
     compiler.run((error, result) => {
@@ -182,7 +274,6 @@ describe('base behavior test', () => {
             }
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
         }),
       ],
     });
@@ -250,48 +341,6 @@ describe('base behavior test', () => {
   //   compiler.outputFileSystem = new MemoryFileSystem();
   // });
 
-  test('support upload multiple chunk and do not affect publich path in async chunk when we do not replace async chunk name', (done) => {
-    const fs = new MemoryFileSystem();
-    const compiler = webpack({
-      mode: 'development',
-      entry: {
-        file: path.join(__dirname, 'fixtures', 'file-a.js'),
-      },
-      output: {
-        path: OUTPUT_DIR,
-        filename: '[name].js',
-        publicPath: '/public/',
-      },
-      plugins: [
-        new WebpackCdnUploadPlugin({
-          upload: async (_, name) => {
-            return CDN_PREFIX + name;
-          },
-          replaceAsyncChunkName: false,
-        }),
-      ],
-    });
-    compiler.outputFileSystem = fs;
-    compiler.run((error, result) => {
-      expect(error).toBeFalsy();
-      expect(result.compilation.errors.length).toBe(0);
-      const fileNames = Object.keys(result.compilation.assets);
-      expect(fileNames.includes('tests_fixtures_file_js.js')).toBe(true);
-      expect(fileNames.includes('tests_fixtures_home_js.js')).toBe(true);
-      expect(fileNames.includes('tests_fixtures_module-a_js.js')).toBe(true);
-      expect(fileNames.includes('vendor.js')).toBe(true);
-      expect(fileNames.includes('file.js')).toBe(true);
-      eval(fs.readFileSync(path.join(__dirname, 'dist/file.js'), 'utf8'));
-      const scripts = Array.from(document.head.getElementsByTagName('script'));
-      expect(scripts.length).toBe(3);
-      const srcs = scripts.map(({ src }) => src);
-      expect(srcs.includes('http://localhost/public/tests_fixtures_file_js.js')).toBe(true);
-      expect(srcs.includes('http://localhost/public/tests_fixtures_home_js.js')).toBe(true);
-      expect(srcs.includes('http://localhost/public/vendor.js')).toBe(true);
-      done();
-    });
-  });
-
   test('support replacement on single html-webpack-plugin', (done) => {
     const fs = new MemoryFileSystem();
     const compiler = webpack({
@@ -311,8 +360,6 @@ describe('base behavior test', () => {
           upload: async (_, name) => {
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
-          replaceAssetsInHtml: true,
         }),
       ],
     });
@@ -352,8 +399,6 @@ describe('base behavior test', () => {
             if (name === 'home.js') return '';
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
-          replaceAssetsInHtml: true,
         }),
       ],
     });
@@ -393,8 +438,6 @@ describe('base behavior test', () => {
           upload: async (_, name) => {
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
-          replaceAssetsInHtml: true,
         }),
       ],
     });
@@ -443,8 +486,6 @@ describe('base behavior test', () => {
             if (/bar/.test(name)) return '';
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
-          replaceAssetsInHtml: true,
         }),
         new MiniCssExtractPlugin({ filename: '[name].css' }),
       ],
@@ -509,9 +550,6 @@ describe('base behavior test', () => {
             fileNames.push(name);
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
-          replaceUrlInCss: true,
-          replaceAssetsInHtml: true,
         }),
         new MiniCssExtractPlugin({ filename: '[name].css' }),
       ],
@@ -520,10 +558,10 @@ describe('base behavior test', () => {
     compiler.run((error, result) => {
       expect(error).toBeFalsy();
       expect(result.compilation.errors.length).toBe(0);
-      expect(fileNames.join('|').indexOf('jpeg') > -1).toBe(true);
+      expect(fileNames.join('|').indexOf('jpg') > -1).toBe(true);
       const css = fs.readFileSync(path.join(__dirname, 'dist/main.css'), 'utf8');
       const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
-      expect(new RegExp(`url\\(${cdnRegExpStr}.*\.jpeg`).test(css as string)).toBe(true);
+      expect(new RegExp(`url\\(${cdnRegExpStr}.*\.jpg`).test(css as string)).toBe(true);
       expect(new RegExp(`url\\(${cdnRegExpStr}.*\.png`).test(css as string)).toBe(false);
       done();
     });
@@ -555,6 +593,9 @@ describe('base behavior test', () => {
             test: /\.(html)$/,
             use: {
               loader: 'html-loader',
+              options: {
+                esModule: false,
+              },
             },
           },
         ],
@@ -568,8 +609,6 @@ describe('base behavior test', () => {
             if (/png/.test(name)) return '';
             return CDN_PREFIX + name;
           },
-          replaceAsyncChunkName: true,
-          replaceAssetsInHtml: true,
         }),
         new MiniCssExtractPlugin({ filename: '[name].css' }),
       ],
@@ -580,7 +619,7 @@ describe('base behavior test', () => {
       expect(result.compilation.errors.length).toBe(0);
       const html = fs.readFileSync(path.join(__dirname, 'dist/index.html'), 'utf8');
       const cdnRegExpStr = escapeStringRegexp(CDN_PREFIX);
-      expect(new RegExp(`${cdnRegExpStr}.*\.jpeg`).test(html as string)).toBe(true);
+      expect(new RegExp(`${cdnRegExpStr}.*\.jpg`).test(html as string)).toBe(true);
       expect(new RegExp(`${cdnRegExpStr}.*\.png`).test(html as string)).toBe(false);
       done();
     });

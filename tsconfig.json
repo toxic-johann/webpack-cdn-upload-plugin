@@ -6,7 +6,7 @@
     ],
     "outDir": "lib",
     "rootDir": "src",
-    "module": "es6",
+    "module": "CommonJS",
     "target": "es2019",
     "moduleResolution": "node",
     "esModuleInterop": true,
