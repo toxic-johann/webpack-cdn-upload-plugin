@@ -2,10 +2,8 @@
 import { isString, isFunction } from 'lodash';
 import { nanoid } from 'nanoid';
 import { Compiler, Compilation, Chunk } from 'webpack';
-import weblog from 'webpack-log';
 
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
-const log = weblog({ name: PLUGIN_NAME, level: process.env.DEBUG ? 'debug' : 'warn' });
 const escapeStringRegexp = (value: string) => value.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&').replace(/-/g, '\\x2d');
 
 interface Options {
@@ -29,14 +27,10 @@ class WebpackCdnUploadPlugin {
 
   entryNames: string[];
 
+  logger: ReturnType<Compiler['getInfrastructureLogger']>;
+
   constructor(options: Options = {}) {
-    const { upload } = options;
-    if (!isFunction(upload)) {
-      log.warn(
-        `You have not provide an upload function. If you need to upload assets to cdn, please provide an upload function or you can remove ${PLUGIN_NAME}.`,
-      );
-    }
-    this.upload = upload;
+    this.upload = options.upload;
     // generate a random id to mark the chunkname, so that we can replace it.
     this.uniqueMark = `${nanoid()}-set-by-${PLUGIN_NAME}`;
     this.chunksIdUrlMap = {};
@@ -45,9 +39,15 @@ class WebpackCdnUploadPlugin {
 
   apply(compiler: Compiler): void {
     /* istanbul ignore if  */
+    this.logger = compiler.getInfrastructureLogger(PLUGIN_NAME);
+    if (!isFunction(this.upload)) {
+      this.logger.warn(
+        `You have not provide an upload function. If you need to upload assets to cdn, please provide an upload function or you can remove ${PLUGIN_NAME}.`,
+      );
+    }
     if (!compiler.hooks) {
       const message = `The webpack you used do not support compiler hooks. Please install ${PLUGIN_NAME}@0`;
-      log.error(message);
+      this.logger.error(message);
       throw new Error(message);
     }
     compiler.hooks.afterPlugins.tap(PLUGIN_NAME, (compiler) => {
@@ -77,6 +77,9 @@ class WebpackCdnUploadPlugin {
           }
           for (const chunk of chunkGroup.chunks) {
             for (const filename of chunk.auxiliaryFiles) {
+              if (filename.endsWith('.js.map')) {
+                continue;
+              }
               if (this.chunksNameUrlMap[filename] || !assets[filename]) {
                 continue;
               }
@@ -96,7 +99,7 @@ class WebpackCdnUploadPlugin {
               if (chunkGroup.isInitial()) {
                 replacedSource = replacedSource.replace(
                   new RegExp(
-                    String.raw`"${this.uniqueMark}" ?\+ ?(\S+?) ?\+ ?"${this.uniqueMark}".*?${this.uniqueMark}\.[A-Za-z]+"`,
+                    String.raw`"${this.uniqueMark}" ?\+ ?(\S+?) ?\+ ?"${this.uniqueMark}.*?${this.uniqueMark}\.[A-Za-z]+"`,
                     'g',
                   ),
                   (_, $1) => `(${JSON.stringify(this.chunksIdUrlMap)})[${$1}]`,
@@ -148,7 +151,7 @@ class WebpackCdnUploadPlugin {
       this.chunksIdUrlMap[chunk.id] = url && isString(url) ? url : nameWithPublicPath;
     }
     this.chunksNameUrlMap[name] = url || nameWithPublicPath;
-    log.info(`"${this.restoreChunkName(name)}" is uploaded and it will be as "${url || nameWithPublicPath}"`);
+    this.logger.info(`"${this.restoreChunkName(name)}" is uploaded and it will be as "${url || nameWithPublicPath}"`);
     return url;
   }
 }

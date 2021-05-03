@@ -16,6 +16,7 @@ declare class WebpackCdnUploadPlugin {
     originChunkFilename: string;
     originPublicPath: string;
     entryNames: string[];
+    logger: ReturnType<Compiler['getInfrastructureLogger']>;
     constructor(options?: Options);
     apply(compiler: Compiler): void;
     compilationFn(_: Compiler, compilation: Compilation): void;
