@@ -1,7 +1,7 @@
 /* eslint-disable no-loop-func, no-await-in-loop, no-continue, no-param-reassign, no-restricted-syntax, no-shadow, max-len, no-plusplus, no-nested-ternary, func-names  */
 import { isString, isFunction } from 'lodash';
 import { nanoid } from 'nanoid';
-import { Compiler, Compilation, Chunk } from 'webpack';
+import { Compiler, Compilation, Chunk, Module, NormalModule } from 'webpack';
 
 const PLUGIN_NAME = 'webpack-cdn-upload-plugin';
 const escapeStringRegexp = (value: string) => value.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&').replace(/-/g, '\\x2d');
@@ -65,8 +65,21 @@ class WebpackCdnUploadPlugin {
   }
 
   compilationFn(_: Compiler, compilation: Compilation): void {
-    compilation.hooks.buildModule.tap(PLUGIN_NAME, (module) => {
-      // console.log(module);
+    compilation.hooks.buildModule.tap(PLUGIN_NAME, (moduleItem: Module) => {
+      if (!(moduleItem instanceof NormalModule) || moduleItem.loaders.length === 0) {
+        return;
+      }
+      const fileLoader = moduleItem.loaders.find((i) => /file-loader/.test(i.loader));
+      if (fileLoader) {
+        let name: string = fileLoader.options?.name || '[hash].[ext]';
+        if (!name.startsWith(this.uniqueMark)) {
+          name = `${this.uniqueMark}[hash]${this.uniqueMark}${name}${this.uniqueMark}.[ext]`;
+        }
+        fileLoader.options = {
+          ...fileLoader.options,
+          name,
+        };
+      }
     });
     compilation.hooks.processAssets.tapPromise(
       { name: PLUGIN_NAME, stage: Compilation.PROCESS_ASSETS_STAGE_REPORT },
